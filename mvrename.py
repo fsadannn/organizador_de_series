@@ -1,90 +1,20 @@
-# -*- coding: UTF-8 -*-
-#!/usr/bin python3
-# @author: SadanNN
-# mover para un hilo el mover ficheros
 
 import sys
 import os
-import re
 import shutil as sh
 from threading import Thread
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
 from PyQt5.QtWidgets import QGroupBox, QCheckBox, QWidget, QVBoxLayout
 from PyQt5.QtWidgets import QHBoxLayout, QLineEdit, QPushButton
 from PyQt5.QtWidgets import QListWidget, QButtonGroup, QRadioButton
-from PyQt5.QtWidgets import QTextEdit, QDockWidget
 from PyQt5.QtCore import Qt, pyqtSignal
-try:
-    MODULE = os.path.dirname(os.path.realpath(__file__))
-except:
-    MODULE = ""
-
-INFORMATION = 0
-WARNING = 1
-ERROR = 2
-DEBUG = 3
-
-LOG_COLORS = {INFORMATION: "green", WARNING: "yellow", ERROR: "red",
-              DEBUG: "blue"}
-
-def logcolor(txt, level):
-    return "<font color=\""+LOG_COLORS[level]+"\">"+txt+"</font>"
-
-def logsize(txt, size):
-    return "<h"+str(size)+">"+txt+"</h"+str(size)+">"
-
-stopwords = set(['no','wa','the','ga','san','to','ni'])
-
-
-def transform(txt):
-    res = []
-    for i in txt.split():
-        if i in stopwords:
-            res.append(i)
-        elif i == " ":
-            continue
-        elif len(i) == 1:
-            res.append(i)
-        else:
-            res.append(i[0].upper()+i[1:].lower())
-    return ' '.join(res)
-
-def editDistance(a, b, transf = True):
-        """Distancia de Leventein entre dos cadenas de texto.
-            a,b son string
-            devuelve un int
-        """
-        if transf:
-            a = transform(a)
-            b = transform(b)
-        else:
-            a = a.lower()
-            b = b.lower()
-        m = []
-        m.append([i for i in range(len(a)+1)])
-        for i in range(len(b)):
-            m.append([i+1]+[0 for i in range(len(a))])
-        for i in range(1,len(b)+1):
-            for j in range(1,len(a)+1):
-                if a[j-1] == b[i-1]:
-                    m[i][j] = m[i-1][j-1]
-                else:
-                    m[i][j] = min(m[i-1][j-1]+1, (min(m[i][j-1]+1, m[i-1][j]+1)))
-        ret = m[len(b)][len(a)]
-        return ret
-
-eb = re.compile('\{.+\}|\(.+\)|\[.+\]')
-epi = re.compile('[Ee]pisodio|[Cc]ap[ií]tulo')
-split = re.compile('([0-9]+[xX]?[0-9]*) *-? *')
-normsp = re.compile('  +')
-endesp = re.compile(' +$')
-begesp = re.compile('^ +')
-formats = {'.mp4':0,'.mkv':0,'.avi':0,'.rm':0,'.rmv':0}
+from utils import *
 
 
 class MoveRename(QWidget):
 
-    loggin = pyqtSignal(str,int)
+    loggin = pyqtSignal(str, int)
+
     def __init__(self):
         super(MoveRename, self).__init__()
         self.cl = QVBoxLayout()
@@ -338,33 +268,3 @@ class MoveRename(QWidget):
         self.loggin.emit("Renombrar finalizado.", DEBUG)
         self.sort_cap(path)
         self.build_ui_caps()
-
-
-class Main(QMainWindow):
-
-    def __init__(self):
-        super(Main, self).__init__()
-        self.cw1 = MoveRename()
-        self.setCentralWidget(self.cw1)
-        self.logs = QTextEdit()
-        self.logs.setReadOnly(True)
-        self.logsdock = QDockWidget("Logs", self)
-        self.logsdock.setAllowedAreas(Qt.BottomDockWidgetArea|Qt.TopDockWidgetArea)
-        self.logsdock.setWidget(self.logs)
-        self.logsdock.setFeatures(QDockWidget.DockWidgetMovable)
-        self.addDockWidget(Qt.BottomDockWidgetArea, self.logsdock)
-        self.cw1.loggin.connect(self.loggin)
-
-    def loggin(self, txt, level):
-        if self.logs.document().lineCount()>1000:
-            self.logs.clear()
-        txt = logcolor(txt, level)
-        self.logs.append(txt)
-
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    w=Main()
-    w.show()
-    w.resize(784,521)
-    sys.exit(app.exec_())
