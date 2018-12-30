@@ -3,7 +3,7 @@
 # @author: SadanNN
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow
-from PyQt5.QtWidgets import QTextEdit, QDockWidget
+from PyQt5.QtWidgets import QTextEdit, QDockWidget, QTabWidget
 from PyQt5.QtCore import Qt
 from mvrename import MoveRename
 from utils import logcolor
@@ -13,8 +13,14 @@ class Main(QMainWindow):
 
     def __init__(self):
         super(Main, self).__init__()
+        self.tabw = QTabWidget(self)
+
         self.cw1 = MoveRename()
-        self.setCentralWidget(self.cw1)
+        self.tabw.addTab(self.cw1,'Mover/Renombrar')
+
+        self.tabw.setTabShape(QTabWidget.Triangular)
+        self.tabw.setTabPosition(QTabWidget.West)
+        self.setCentralWidget(self.tabw)
         self.logs = QTextEdit()
         self.logs.setReadOnly(True)
         self.logsdock = QDockWidget("Logs", self)
