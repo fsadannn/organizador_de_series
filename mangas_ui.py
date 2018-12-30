@@ -4,10 +4,12 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtWidgets import QTextEdit, QDockWidget, QTabWidget
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QByteArray
+from PyQt5.QtGui import QPixmap, QIcon
 from mvrename import MoveRename
 from falta import Falta
 from utils import logcolor
+from appicon import icon
 
 
 class Main(QMainWindow):
@@ -41,9 +43,13 @@ class Main(QMainWindow):
         self.logs.append(txt)
 
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    w = Main()
-    w.show()
-    w.resize(784, 521)
-    sys.exit(app.exec_())
+#if __name__ == '__main__':
+app = QApplication(sys.argv)
+w = Main()
+qtimgd = QByteArray(icon())
+px = QPixmap()
+px.loadFromData(qtimgd, 'ico')
+app.setWindowIcon(QIcon(px))
+w.show()
+w.resize(784, 521)
+sys.exit(app.exec_())

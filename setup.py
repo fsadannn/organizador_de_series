@@ -8,17 +8,18 @@ if sys.platform == 'win32':
 
 options = {
     'build_exe': {
-        'includes': 'atexit'
+        'includes': ['atexit', 'utils', 'mvrename', 'falta', 'appicon'],
+        'optimize': 2
     }
 }
 
 executables = [
-    Executable('mangas_ui.pyw', base=base,
+    Executable('mangas_ui.py', base=base,
                targetName='Organizador de Animes.exe', icon='geas.ico')
 ]
 
 setup(name='Organizador',
-      version='2.2',
+      version='3.0',
       description='Organizador de Animes',
       options=options,
       executables=executables
