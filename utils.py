@@ -1,4 +1,5 @@
 import re
+import os
 
 INFORMATION = 0
 WARNING = 1
@@ -67,3 +68,27 @@ normsp = re.compile('  +')
 endesp = re.compile(' +$')
 begesp = re.compile('^ +')
 formats = {'.mp4': 0, '.mkv': 0, '.avi': 0, '.rm': 0, '.rmv': 0}
+
+
+def rename(name):
+    err = False
+    txt, ext = os.path.splitext(name)
+    txt = eb.sub('', txt)
+    txt = txt.replace('-', ' ')
+    txt = epi.sub('-', txt)
+    txt = normsp.sub(' ', txt)
+    try:
+        tt = ''.join(list(reversed(txt)))
+        hh = list(reversed(list(map(lambda x:''.join(list(reversed(x))),
+                    list(filter(lambda x:x!='' and x!=' ',split.split(tt,1)))))))
+        t1, t2 = hh[0], hh[1]
+        t1 = transform(t1)
+    except (ValueError, IndexError):
+        return '', '', '', True
+    t1 = endesp.sub('', t1)
+    t1 = begesp.sub('', t1)
+    t2 = endesp.sub('', t2)
+    t2 = begesp.sub('', t2)
+    return t1, t2, ext, err
+
+formatt=re.compile(' *- *([0-9]+)')

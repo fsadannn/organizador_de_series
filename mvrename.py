@@ -3,13 +3,13 @@ import sys
 import os
 import shutil as sh
 from threading import Thread
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QInputDialog, QLineEdit
 from PyQt5.QtWidgets import QGroupBox, QCheckBox, QWidget, QVBoxLayout
 from PyQt5.QtWidgets import QHBoxLayout, QLineEdit, QPushButton
 from PyQt5.QtWidgets import QListWidget, QButtonGroup, QRadioButton
-from PyQt5.QtWidgets import QInputDialog, QLineEdit
 from PyQt5.QtCore import Qt, pyqtSignal
-from utils import *
+from utils import INFORMATION, WARNING, DEBUG, ERROR, formats
+from utils import rename, editDistance
 
 
 class MoveRename(QWidget):
@@ -159,26 +159,10 @@ class MoveRename(QWidget):
         caps = []
         capsmap = {}
         for i in proces:
-            txt, ext = os.path.splitext(i)
-            txt = eb.sub('', txt)
-            txt = txt.replace('-', ' ')
-            txt = epi.sub('-', txt)
-            txt = normsp.sub(' ', txt)
-
-            try:
-                tt = ''.join(list(reversed(txt)))
-                hh = list(reversed(list(map(lambda x:''.join(list(reversed(x))),
-                            list(filter(lambda x:x!='' and x!=' ',split.split(tt,1)))))))
-                t1, t2 = hh[0],hh[1]
-                t1 = transform(t1)
-            except (ValueError, IndexError):
+            t1, t2, ext, err = rename(i)
+            if err:
                 self.loggin.emit("Error procesando: "+i, WARNING)
-                #print('Error procesing '+i)
                 continue
-            t1 = endesp.sub('', t1)
-            t1 = begesp.sub('', t1)
-            t2 = endesp.sub('', t2)
-            t2 = begesp.sub('', t2)
             folders.append(t1)
             strt = t1+' - '+t2+ext
             caps.append({'original':i, 'fixname':strt, 'folder':t1})

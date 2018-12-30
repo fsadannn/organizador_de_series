@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtWidgets import QTextEdit, QDockWidget, QTabWidget
 from PyQt5.QtCore import Qt
 from mvrename import MoveRename
+from falta import Falta
 from utils import logcolor
 
 
@@ -17,6 +18,9 @@ class Main(QMainWindow):
 
         self.cw1 = MoveRename()
         self.tabw.addTab(self.cw1,'Mover/Renombrar')
+
+        self.cw2 = Falta()
+        self.tabw.addTab(self.cw2,'Falta')
 
         self.tabw.setTabShape(QTabWidget.Triangular)
         self.tabw.setTabPosition(QTabWidget.West)
