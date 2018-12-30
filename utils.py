@@ -5,7 +5,7 @@ WARNING = 1
 ERROR = 2
 DEBUG = 3
 
-LOG_COLORS = {INFORMATION: "green", WARNING: "yellow", ERROR: "red",
+LOG_COLORS = {INFORMATION: "green", WARNING: "orange", ERROR: "red",
               DEBUG: "blue"}
 
 

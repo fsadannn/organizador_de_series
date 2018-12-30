@@ -6,6 +6,8 @@ from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtWidgets import QTextEdit, QDockWidget
 from PyQt5.QtCore import Qt
 from mvrename import MoveRename
+from utils import logcolor
+
 
 class Main(QMainWindow):
 

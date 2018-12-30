@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
 from PyQt5.QtWidgets import QGroupBox, QCheckBox, QWidget, QVBoxLayout
 from PyQt5.QtWidgets import QHBoxLayout, QLineEdit, QPushButton
 from PyQt5.QtWidgets import QListWidget, QButtonGroup, QRadioButton
+from PyQt5.QtWidgets import QInputDialog, QLineEdit
 from PyQt5.QtCore import Qt, pyqtSignal
 from utils import *
 
@@ -45,6 +46,7 @@ class MoveRename(QWidget):
 
         self.li = QListWidget()
         self.cl.addWidget(self.li)
+        self.li.itemDoubleClicked.connect(self.edititem)
 
         tt = QHBoxLayout()
         self.proc = QPushButton("Procesar")
@@ -68,6 +70,19 @@ class MoveRename(QWidget):
             self.movef(self.pathbar.text())
         else:
             self.renamef(self.pathbar.text())
+
+    def edititem(self, item):
+        cps = self.caps
+        cpsm = self.capsmap
+        txt = item.text().split("\t")
+        text, ok = QInputDialog.getText(None, "Editar",
+                                        "Nombre:", QLineEdit.Normal,
+                                        txt[0])
+        if ok and text!='' and not text is None:
+            cps[cpsm[txt[1]]]['fixname'] = text
+            item.setText(text+'\t'+txt[1])
+            item.setCheckState(Qt.Checked)
+
 
     def allf(self):
         li = self.li
@@ -167,7 +182,7 @@ class MoveRename(QWidget):
             folders.append(t1)
             strt = t1+' - '+t2+ext
             caps.append({'original':i, 'fixname':strt, 'folder':t1})
-            capsmap[strt] = len(caps)-1
+            capsmap[i] = len(caps)-1
 
         folders = list(set(folders))
         fnew = []
@@ -218,7 +233,7 @@ class MoveRename(QWidget):
         for i in range(li.count()):
             item = li.item(i)
             if item.checkState() == 2:
-                txt = item.text().split("\t")[0]
+                txt = item.text().split("\t")[1]
                 caps.append(cps[cpsm[txt]])
                 dd = caps[-1]['folder']
                 if dd in fn:
@@ -235,8 +250,8 @@ class MoveRename(QWidget):
         for i in caps:
             if i['folder'] in remap:
                 i['folder'] = remap[i['folder']]
-            sh.copy2(os.path.join(path,i['original']),os.path.join(path,i['folder'],i['fixname']))
             self.loggin.emit("Moviendo: "+i['original']+' para '+i['folder'], INFORMATION)
+            sh.copy2(os.path.join(path,i['original']),os.path.join(path,i['folder'],i['fixname']))
             os.remove(os.path.join(path,i['original']))
         self.loggin.emit("Mover finalizado.", DEBUG)
         self.sort_cap(path)
@@ -250,7 +265,7 @@ class MoveRename(QWidget):
         for i in range(li.count()):
             item = li.item(i)
             if item.checkState() == 2:
-                txt = item.text().split("\t")[0]
+                txt = item.text().split("\t")[1]
                 caps.append(cps[cpsm[txt]])
 
         temp = set()
@@ -260,8 +275,8 @@ class MoveRename(QWidget):
                 self.loggin.emit('Remove', ERROR)
                 continue
             try:
-                os.renames(os.path.join(path,i['original']),os.path.join(path,i['fixname']))
                 self.loggin.emit("Renombrando: "+i['original']+'  a  '+i['fixname'], INFORMATION)
+                os.renames(os.path.join(path,i['original']),os.path.join(path,i['fixname']))
                 temp.add(i['fixname'])
             except Exception as e:
                 self.loggin.emit(str(e), ERROR)
