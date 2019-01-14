@@ -34,14 +34,17 @@ class MoveRename(QWidget):
         tt1 = QRadioButton("Mover")
         tt1.setChecked(True)
         tt2 = QRadioButton("Renombrar")
+        tt3 = QRadioButton("Renombrar a #")
         self.move.addButton(tt1, 1)
         self.move.addButton(tt2, 2)
+        self.move.addButton(tt3, 3)
         self.move.setExclusive(True)
         tt.addWidget(self.all)
         tt.addWidget(self.invert)
         tt.addStretch()
         tt.addWidget(tt1)
         tt.addWidget(tt2)
+        tt.addWidget(tt3)
         self.cl.addLayout(tt)
 
         self.li = QListWidget()
@@ -61,7 +64,13 @@ class MoveRename(QWidget):
         self.all.clicked.connect(self.allf)
         self.invert.clicked.connect(self.invertf)
         self.proc.clicked.connect(self.procces)
+        self.move.buttonClicked.connect(self.gen_list)
         self.movethread = None
+
+    def gen_list(self, id):
+        if self.pathbar.text() == '':
+            return
+        self.build_ui_caps()
 
     def procces(self):
         if self.pathbar.text() == '':
@@ -82,7 +91,6 @@ class MoveRename(QWidget):
             cps[cpsm[txt[1]]]['fixname'] = text
             item.setText(text+'\t'+txt[1])
             item.setCheckState(Qt.Checked)
-
 
     def allf(self):
         li = self.li
@@ -116,23 +124,36 @@ class MoveRename(QWidget):
         self.allf()
 
     def build_ui_caps(self):
+        nonly = self.move.checkedId() == 3
         li = self.li
         lic = li.count()
         cpl = len(self.caps)
         cps = self.caps
         if cpl <= lic:
             for n, i in enumerate(cps):
+                name = i['fixname']
+                if nonly:
+                    t1, t2, ext, err = rename(name)
+                    name = t2+ext
                 ll = li.item(n)
-                ll.setText(i['fixname']+"\t"+i['original'])
+                ll.setText(name+"\t"+i['original'])
             for i in range(lic-cpl):
                 ll = li.takeItem(0)
                 del ll
         else:
             for i in range(lic):
+                name = cps[i]['fixname']
+                if nonly:
+                    t1, t2, ext, err = rename(name)
+                    name = t2+ext
                 ll = li.item(i)
-                ll.setText(cps[i]['fixname']+"\t"+cps[i]['original'])
+                ll.setText(name+"\t"+cps[i]['original'])
             for i in range(cpl-lic):
-                li.addItem(cps[lic+i]['fixname']+"\t"+cps[lic+i]['original'])
+                name = cps[lic+i]['fixname']
+                if nonly:
+                    t1, t2, ext, err = rename(name)
+                    name = t2+ext
+                li.addItem(name+"\t"+cps[lic+i]['original'])
 
     def get_path(self):
         txt = self.pathbar.text()
@@ -242,6 +263,7 @@ class MoveRename(QWidget):
         self.build_ui_caps()
 
     def _renamef(self, path):
+        nonly = self.move.checkedId()==3
         li = self.li
         cps = self.caps
         cpsm = self.capsmap
@@ -254,14 +276,18 @@ class MoveRename(QWidget):
 
         temp = set()
         for i in caps:
-            if i['fixname'] in temp:
+            name = i['fixname']
+            if nonly:
+                t1, t2, ext, err = rename(name)
+                name = t2+ext
+            if name in temp:
                 os.remove(os.path.join(path, i['original']))
                 self.loggin.emit('Remove', ERROR)
                 continue
             try:
-                self.loggin.emit("Renombrando: "+i['original']+'  a  '+i['fixname'], INFORMATION)
-                os.renames(os.path.join(path,i['original']),os.path.join(path,i['fixname']))
-                temp.add(i['fixname'])
+                self.loggin.emit("Renombrando: "+i['original']+'  a  '+name, INFORMATION)
+                os.renames(os.path.join(path,i['original']),os.path.join(path,name))
+                temp.add(name)
             except Exception as e:
                 self.loggin.emit(str(e), ERROR)
         self.loggin.emit("Renombrar finalizado.", DEBUG)

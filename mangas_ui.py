@@ -35,6 +35,7 @@ class Main(QMainWindow):
         self.logsdock.setFeatures(QDockWidget.DockWidgetMovable)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.logsdock)
         self.cw1.loggin.connect(self.loggin)
+        self.cw2.loggin.connect(self.loggin)
 
     def loggin(self, txt, level):
         if self.logs.document().lineCount() > 1000:
@@ -46,9 +47,10 @@ class Main(QMainWindow):
 #if __name__ == '__main__':
 app = QApplication(sys.argv)
 w = Main()
-qtimgd = QByteArray(icon())
+ic,ext=icon()
+qtimgd = QByteArray(ic)
 px = QPixmap()
-px.loadFromData(qtimgd, 'ico')
+px.loadFromData(qtimgd, ext)
 app.setWindowIcon(QIcon(px))
 w.show()
 w.resize(784, 521)

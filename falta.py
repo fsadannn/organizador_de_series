@@ -1,6 +1,7 @@
 import sys
 import os
-
+import re
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFileDialog
 from PyQt5.QtWidgets import QHBoxLayout, QPushButton, QRadioButton
 from PyQt5.QtWidgets import QListWidget, QLineEdit, QButtonGroup
@@ -8,7 +9,15 @@ from utils import INFORMATION, WARNING, DEBUG, ERROR, formats, formatt
 from utils import rename, editDistance
 
 
+fff = re.compile('')
+def filt(t):
+    pass
+    # funcion para capitulos en el formato temp[xX]caps
+
+
 class Falta(QWidget):
+
+    loggin = pyqtSignal(str, int)
 
     def __init__(self):
         super(Falta, self).__init__()
@@ -99,10 +108,13 @@ class Falta(QWidget):
                 folds.append(i)
         for i in folds:
             path = os.path.join(base, i)
-            t = os.listdir(path)
-            for j in t:
-                if os.path.isfile(os.path.join(path, j)) and (os.path.splitext(j)[1] in formats):
-                    proces.append((j, i))
+            try:
+                t = os.listdir(path)
+                for j in t:
+                    if os.path.isfile(os.path.join(path, j)) and (os.path.splitext(j)[1] in formats):
+                        proces.append((j, i))
+            except PermissionError as e:
+                self.loggin.emit("Acceso denegado a: "+i, ERROR)
 
         folds = {}
         for filee, fold in proces:
@@ -128,15 +140,19 @@ class Falta(QWidget):
                 folds.append(i)
         for i in folds:
             path = os.path.join(base, i)
-            t = os.listdir(path)
-            for j in t:
-                if os.path.isfile(os.path.join(path, j)) and (os.path.splitext(j)[1] in formats):
-                    proces.append((j, i))
+            try:
+                t = os.listdir(path)
+                for j in t:
+                    if os.path.isfile(os.path.join(path, j)) and (os.path.splitext(j)[1] in formats):
+                        proces.append((j, i))
+            except PermissionError as e:
+                self.loggin.emit("Acceso denegado a"+i, ERROR)
 
         folds = {}
         for filee, fold in proces:
-            if formatt.search(filee):
+            if formatt.search(filee) or re.match('[0-9]+x?[0-9]*',filee,re.I):
                 t1, t2, ext, err = rename(filee)
+                print(t1,t2,ext,err)
                 if err:
                     continue
                 if fold in folds:
