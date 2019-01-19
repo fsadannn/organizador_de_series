@@ -1,10 +1,23 @@
 import re
+import os
+import sys
+import json
+from stopwords import stopwords
+if hasattr(sys, 'frozen'):
+    MODULE = os.path.dirname(sys.executable)
+else:
+    try:
+        MODULE = os.path.dirname(os.path.realpath(__file__))
+    except:
+        MODULE = ""
 try:
-    from .stopwords import stopwords
-except ImportError:
-    from stopwords import stopwords
+    keep = set(json.load(open(os.path.join(MODULE, 'keep_join.json'))))
+except:
+    keep = ['kun', 'sama']
+    json.dump(keep, open(os.path.join(MODULE, 'keep_join.json'),'w'))
+    keep = set(keep)
 
-tokens = re.compile('[a-zA-Z0-9!]+')
+tokens = re.compile('[a-zA-Z0-9!\']+')
 normsp = re.compile('  +')
 daysstr = ['lunes', 'martes', 'mi[eé]rcoles', 'jueves', 'viernes', 's[áa]bado', 'domingo',
            'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -29,11 +42,11 @@ def transform(txt):
             res.append(i.lower())
         elif i == " ":
             continue
-        elif len(i) == 1 or upperm.search(i):
+        elif len(i) < 3 or upperm.search(i):
             res.append(i)
         else:
             res.append(i[0].upper()+i[1:].lower())
-    return ' '.join(res)
+    return ' '.join(res).strip()
 
 
 def clean(txt):
@@ -110,6 +123,7 @@ def process(toks, seps, data={}, deep=0):
         data['capcandidate'] = []
     if deep == 0:
         name = {'toks': [], 'seps': []}
+    print(ungrouptoks, ungroupseps)
     while i < len(ungrouptoks):
         if capflag and epi.search(ungrouptoks[i]):
             if i+1 < len(ungrouptoks):
@@ -125,39 +139,56 @@ def process(toks, seps, data={}, deep=0):
         elif capflag and captemp.search(ungrouptoks[i]):
             data['capcandidate'].append(
                 (ungrouptoks[i], int(bool(re.search('[A-Za-z]+', ungrouptoks[i]))) -
-                 int(bool(re.search('[0-9]+[xX][0-9]+', ungrouptoks[i])))))
+                 int(bool(re.search('[0-9]+[xX][0-9]+', ungrouptoks[i]))) +
+                 1-i/len(ungrouptoks), len(name['toks'])))
+            if deep == 0:
+                name['toks'].append(ungrouptoks[i])
+                name['seps'].append(ungroupseps[i])
         elif deep == 0:
             name['toks'].append(ungrouptoks[i])
             name['seps'].append(ungroupseps[i])
         i += 1
-    if deep == 0:
-        namee = ''
-        for tok, sep in zip(name['toks'], name['seps']):
-            namee += tok
-            if sep == '-':
-                namee += '-'
-            else:
-                namee += ' '
-        namee = transform(namee)
-        data['name'] = namee
 
     if deep == 0 and capflag:
         capcandidate = list(sorted(data['capcandidate'], key=lambda x: x[1]))
+        print(capcandidate)
         if len(capcandidate) == 1:
             ff = captemp.search(capcandidate[0][0])
             data['cap'] = ff.group()
-            if data['name'] == '':
-                data['name'] = captemp.sub('', capcandidate[0][0], 1)
+            data['pos'] = capcandidate[0][2]
         elif len(list(filter(lambda x: x[1] == 0, capcandidate))) == 1:
             ff = captemp.search(capcandidate[0][0])
             data['cap'] = ff.group()
+            data['pos'] = capcandidate[0][2]
         else:
             ff = captemp.search(capcandidate[0][0])
             data['cap'] = ff.group()
-            if data['name'] == '':
-                data['name'] = captemp.sub('', capcandidate[0][0], 1)
+            data['pos'] = capcandidate[0][2]
+
+    if deep == 0:
+        namee = ''
+        check = False
+        for nn, (tok, sep) in enumerate(zip(name['toks'], name['seps'])):
+            if nn == data['pos']:
+                continue
+            if check:
+                if tok in keep:
+                    namee += '-'
+                else:
+                    namee += ' '
+                check = False
+            if sep == '-':
+                check = True
+                namee += tok
+            else:
+                check = False
+                namee += tok
+                namee += ' '
+        namee = transform(namee)
+        data['name'] = namee
     if deep == 0:
         data.pop('capcandidate')
+        data.pop('pos')
     return data
 
 

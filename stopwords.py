@@ -48,4 +48,4 @@ stopwords.update(['i','me','my','myself','we','our','ours','ourselves','you','yo
 'when','where','why','how','all','any','both','each','few','more','most',
 'other','some','such','no','nor','not','only','own','same','so','than','too',
 'very','s','t','can','will','just','don','should','should'])
-stopwords.update(['no','wa','the','ga','san','to','ni','ni'])
+stopwords.update(['no','wa','the','ga','san','to','ni','na','kun','sama'])

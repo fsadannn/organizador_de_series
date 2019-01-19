@@ -185,7 +185,8 @@ class MoveRename(QWidget):
                 self.loggin.emit("Error procesando: "+i, WARNING)
                 continue
             folders.append(t1)
-            strt = t1+' - '+t2+ext
+            # printprint(t1,type(t1),t2,type(t2))
+            strt = t1+' - '+str(t2)+ext
             caps.append({'original':i, 'fixname':strt, 'folder':t1})
             capsmap[i] = len(caps)-1
 
@@ -218,6 +219,7 @@ class MoveRename(QWidget):
         if self.movethread:
             if self.movethread.isAlive():
                 self.loggin.emit('Hay un proceso en este momento, espere.', WARNING)
+                return
         self.movethread = Thread(target=self._movef, args=(path,))
         self.movethread.start()
 
@@ -225,6 +227,7 @@ class MoveRename(QWidget):
         if self.movethread:
             if self.movethread.isAlive():
                 self.loggin.emit('Hay un proceso en este momento, espere.', WARNING)
+                return
         self.movethread = Thread(target=self._renamef, args=(path,))
         self.movethread.start()
 
