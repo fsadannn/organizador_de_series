@@ -1,6 +1,16 @@
 import re
 import os
-from parser_serie import rename_serie
+import sys
+import json
+from parser_serie import rename_serie, transform
+
+if hasattr(sys, 'frozen'):
+    MODULE = os.path.dirname(sys.executable)
+else:
+    try:
+        MODULE = os.path.dirname(os.path.realpath(__file__))
+    except:
+        MODULE = ""
 
 INFORMATION = 0
 WARNING = 1
@@ -17,23 +27,6 @@ def logcolor(txt, level):
 
 def logsize(txt, size):
     return "<h"+str(size)+">"+txt+"</h"+str(size)+">"
-
-
-stopwords = set(['no', 'wa', 'the', 'ga', 'san', 'to', 'ni','wo'])
-
-
-def transform(txt):
-    res = []
-    for i in txt.split():
-        if i.lower() in stopwords:
-            res.append(i.lower())
-        elif i == " ":
-            continue
-        elif len(i) == 1:
-            res.append(i)
-        else:
-            res.append(i[0].upper()+i[1:].lower())
-    return ' '.join(res)
 
 
 def editDistance(a, b, transf=True):
@@ -68,7 +61,13 @@ split = re.compile('([0-9]+[xX]?[0-9]*) *-? *')
 normsp = re.compile('  +')
 endesp = re.compile(' +$')
 begesp = re.compile('^ +')
-formats = {'.mp4': 0, '.mkv': 0, '.avi': 0, '.rm': 0, '.rmv': 0,'.str': 0}
+try:
+    formats = json.load(open(os.path.join(MODULE, 'formats.json')))
+except:
+    formats = {'.mp4': 0, '.mkv': 0, '.avi': 0, '.rm': 0, '.rmv': 0, '.str': 0,
+               '.mpg': 0, '.mpeg': 0}
+    json.dump(formats, open(os.path.join(MODULE, 'formats.json'),'w'), indent=1)
+
 
 def rename(name):
     err = False
@@ -79,4 +78,4 @@ def rename(name):
         return '', '', '', True
     return t1, t2, ext, err
 
-formatt=re.compile(' *- *([0-9]+)')
+formatt = re.compile(' *- *([0-9]+)')
