@@ -121,9 +121,9 @@ def process(toks, seps, data={}, deep=0):
     capflag = not('cap' in data)
     if not('capcandidate' in data):
         data['capcandidate'] = []
-    if deep == 0:
-        name = {'toks': [], 'seps': []}
-    print(ungrouptoks, ungroupseps)
+    # if deep == 0:
+    name = {'toks': [], 'seps': []}
+    #print(ungrouptoks, ungroupseps)
     while i < len(ungrouptoks):
         if capflag and epi.search(ungrouptoks[i]):
             if i+1 < len(ungrouptoks):
@@ -148,11 +148,12 @@ def process(toks, seps, data={}, deep=0):
             name['toks'].append(ungrouptoks[i])
             name['seps'].append(ungroupseps[i])
         i += 1
-
     if deep == 0 and capflag:
         capcandidate = list(sorted(data['capcandidate'], key=lambda x: x[1]))
-        print(capcandidate)
-        if len(capcandidate) == 1:
+        if len(capcandidate)==0:
+            data['cap'] = ''
+            data['pos'] = -1
+        elif len(capcandidate) == 1:
             ff = captemp.search(capcandidate[0][0])
             data['cap'] = ff.group()
             data['pos'] = capcandidate[0][2]
@@ -164,8 +165,9 @@ def process(toks, seps, data={}, deep=0):
             ff = captemp.search(capcandidate[0][0])
             data['cap'] = ff.group()
             data['pos'] = capcandidate[0][2]
-
     if deep == 0:
+        if not('pos' in data):
+            data['pos']=-1
         namee = ''
         check = False
         for nn, (tok, sep) in enumerate(zip(name['toks'], name['seps'])):
@@ -195,5 +197,6 @@ def process(toks, seps, data={}, deep=0):
 def rename_serie(txt):
     cc = clean(txt)
     toks, seps = parse(cc)
+    print(toks,seps)
     res = process(toks, seps, {})
     return res['name'], res['cap']

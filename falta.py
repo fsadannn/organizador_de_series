@@ -4,7 +4,8 @@ import re
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFileDialog
 from PyQt5.QtWidgets import QHBoxLayout, QPushButton, QRadioButton
-from PyQt5.QtWidgets import QListWidget, QLineEdit, QButtonGroup
+from PyQt5.QtWidgets import QTreeWidget, QLineEdit, QButtonGroup
+from PyQt5.QtWidgets import QTreeWidgetItem
 from utils import INFORMATION, WARNING, DEBUG, ERROR, formats, formatt
 from utils import rename, editDistance
 
@@ -43,7 +44,8 @@ class Falta(QWidget):
         tt.addStretch()
         self.cl.addLayout(tt)
 
-        self.li = QListWidget()
+        self.li = QTreeWidget()
+        self.li.setColumnCount(1)
         self.cl.addWidget(self.li)
 
         tt = QHBoxLayout()
@@ -90,12 +92,16 @@ class Falta(QWidget):
                         else:
                             txt = i + " : " + \
                                 str(data[j]+1) + '-' + str(data[j+1]-1)
-                        li.addItem(txt)
+                        zz = QTreeWidgetItem(self.li)
+                        zz.setText(0,txt)
+                        li.addTopLevelItem(zz)
         else:
             self.last()
             caps_list = self.caps_list
             for i in sorted(caps_list.keys()):
-                li.addItem(i + ' : ' + str(caps_list[i]))
+                zz = QTreeWidgetItem(self.li)
+                zz.setText(0,i + ' : ' + str(caps_list[i]))
+                li.addTopLevelItem(zz)
 
     def last(self):
         base = self.pathbar.text()
@@ -120,6 +126,9 @@ class Falta(QWidget):
         for filee, fold in proces:
             if formatt.search(filee):
                 t1, t2, ext, err = rename(filee)
+                if isinstance(t2,str):
+                    if 'x' in t2:
+                        t2=t2.split('x')[1]
                 if err:
                     continue
                 if fold in folds:
@@ -152,7 +161,10 @@ class Falta(QWidget):
         for filee, fold in proces:
             if formatt.search(filee) or re.match('[0-9]+x?[0-9]*',filee,re.I):
                 t1, t2, ext, err = rename(filee)
-                print(t1,t2,ext,err)
+                if isinstance(t2,str):
+                    if 'x' in t2:
+                        t2=t2.split('x')[1]
+                #print(t1,t2,ext,err)
                 if err:
                     continue
                 if fold in folds:
