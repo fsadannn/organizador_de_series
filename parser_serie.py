@@ -30,9 +30,11 @@ garbage = re.compile('\{ *\}|\( *\)|\[ *\]')
 groupsop = re.compile('|'.join(['\{', '\(', '\[']))
 groupscl = re.compile('|'.join(['\}', '\)', '\]']))
 clopgp = re.compile('|'.join(['\]\[', '\}\{', '\)\(']))
-resolution = re.compile('1080p|720p|480p')
-captemp = re.compile('[0-9]+x?[0-9]*', re.I)
+resolution = re.compile('1080p|720p|480p|1920 *[xX] *1080|1280 *[xX] *720|720 *[xX] *480')
+captemp = re.compile('[0-9]{1,4}x?[0-9]{0,4}', re.I)
+ordinal = re.compile('1st|2nd|3rd|[1-9][0-9?]th|1ro|2do|3ro|[4-6]to|7mo|8vo|9no')
 upperm = re.compile('[A-Z].*[A-Z]')
+letn = re.compile('[0-9][a-z]',re.I)
 
 
 def transform(txt):
@@ -42,6 +44,8 @@ def transform(txt):
             res.append(i.lower())
         elif i == " ":
             continue
+        elif len(i) < 3 and letn.search(i):
+            res.append(i[0]+i[1].upper())
         elif len(i) < 3 or upperm.search(i):
             res.append(i)
         else:
@@ -90,8 +94,12 @@ def process(toks, seps, data={}, deep=0):
         seps = seps+['']
     if len(toks) == 1 and deep == 0:
         ff = captemp.search(toks[0])
-        data['cap'] = ff.group()
-        data['name'] = captemp.sub('', toks[0], 1)
+        if ff:
+            data['cap'] = ff.group()
+            data['name'] = captemp.sub('', toks[0], 1)
+        else:
+            data['cap'] = ''
+            data['name'] = toks[0]
         return data
     ungrouptoks = []
     ungroupseps = []
@@ -127,7 +135,7 @@ def process(toks, seps, data={}, deep=0):
     while i < len(ungrouptoks):
         if capflag and epi.search(ungrouptoks[i]):
             if i+1 < len(ungrouptoks):
-                ff = re.search('[0-9]+', ungrouptoks[i+1])
+                ff = re.search('[0-9]{1,4}', ungrouptoks[i+1])
                 if ff:
                     data['cap'] = int(ff.group())
                     capflag = False
@@ -136,10 +144,10 @@ def process(toks, seps, data={}, deep=0):
             ff = captemp.search(ungrouptoks[i])
             data['cap'] = int(ff.group())
             capflag = False
-        elif capflag and captemp.search(ungrouptoks[i]):
+        elif capflag and captemp.search(ungrouptoks[i]) and not ordinal.search(ungrouptoks[i]):
             data['capcandidate'].append(
                 (ungrouptoks[i], int(bool(re.search('[A-Za-z]+', ungrouptoks[i]))) -
-                 int(bool(re.search('[0-9]+[xX][0-9]+', ungrouptoks[i]))) +
+                 int(bool(re.search('[0-9]{1,4}[xX][0-9]{1,4}', ungrouptoks[i]))) +
                  1-i/len(ungrouptoks), len(name['toks'])))
             if deep == 0:
                 name['toks'].append(ungrouptoks[i])
@@ -150,7 +158,7 @@ def process(toks, seps, data={}, deep=0):
         i += 1
     if deep == 0 and capflag:
         capcandidate = list(sorted(data['capcandidate'], key=lambda x: x[1]))
-        if len(capcandidate)==0:
+        if len(capcandidate) == 0:
             data['cap'] = ''
             data['pos'] = -1
         elif len(capcandidate) == 1:
@@ -197,6 +205,6 @@ def process(toks, seps, data={}, deep=0):
 def rename_serie(txt):
     cc = clean(txt)
     toks, seps = parse(cc)
-    print(toks,seps)
+    #print(toks,seps)
     res = process(toks, seps, {})
     return res['name'], res['cap']

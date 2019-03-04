@@ -186,7 +186,10 @@ class MoveRename(QWidget):
                 continue
             folders.append(t1)
             # printprint(t1,type(t1),t2,type(t2))
-            strt = t1+' - '+str(t2)+ext
+            if str(t2):
+                strt = t1+' - '+str(t2)+ext
+            else:
+                strt = t1+ext
             caps.append({'original':i, 'fixname':strt, 'folder':t1})
             capsmap[i] = len(caps)-1
 

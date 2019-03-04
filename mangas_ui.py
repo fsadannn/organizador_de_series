@@ -47,7 +47,7 @@ class Main(QMainWindow):
 #if __name__ == '__main__':
 app = QApplication(sys.argv)
 w = Main()
-ic,ext=icon()
+ic, ext=icon()
 qtimgd = QByteArray(ic)
 px = QPixmap()
 px.loadFromData(qtimgd, ext)

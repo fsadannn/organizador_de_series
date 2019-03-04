@@ -84,24 +84,40 @@ class Falta(QWidget):
             self.falta_caps()
             caps_list = self.caps_list
             for i in sorted(caps_list.keys()):
-                data = [0]+list(sorted(caps_list[i]))
-                for j in range(len(data)-1):
-                    if data[j+1]-data[j] > 1:
-                        if data[j+1]-data[j] == 2:
-                            txt = i + " : " + str(data[j]+1)
-                        else:
-                            txt = i + " : " + \
-                                str(data[j]+1) + '-' + str(data[j+1]-1)
-                        zz = QTreeWidgetItem(self.li)
-                        zz.setText(0,txt)
-                        li.addTopLevelItem(zz)
+                parent = QTreeWidgetItem()
+                parent.setText(0, i)
+                addp = False
+                for k in sorted(caps_list[i].keys()):
+                    data = [0]+list(sorted(caps_list[i][k]))
+                    for j in range(len(data)-1):
+                        if data[j+1]-data[j] > 1:
+                            if data[j+1]-data[j] == 2:
+                                txt = k + " : " + str(data[j]+1)
+                                addp = True
+                            else:
+                                txt = k + " : " + \
+                                    str(data[j]+1) + '-' + str(data[j+1]-1)
+                                addp = True
+                            child = QTreeWidgetItem(parent)
+                            child.setText(0, txt)
+                            parent.addChild(child)
+                #print(i, addp)
+                if addp:
+                    li.addTopLevelItem(parent)
+                else:
+                    del parent
         else:
             self.last()
             caps_list = self.caps_list
             for i in sorted(caps_list.keys()):
-                zz = QTreeWidgetItem(self.li)
-                zz.setText(0,i + ' : ' + str(caps_list[i]))
-                li.addTopLevelItem(zz)
+                parent = QTreeWidgetItem()
+                parent.setText(0, i)
+                for k in sorted(caps_list[i].keys()):
+                    txt = k + " - " + str(caps_list[i][k])
+                    child = QTreeWidgetItem(parent)
+                    child.setText(0, txt)
+                    parent.addChild(child)
+                li.addTopLevelItem(parent)
 
     def last(self):
         base = self.pathbar.text()
@@ -120,22 +136,33 @@ class Falta(QWidget):
                     if os.path.isfile(os.path.join(path, j)) and (os.path.splitext(j)[1] in formats):
                         proces.append((j, i))
             except PermissionError as e:
-                self.loggin.emit("Acceso denegado a: "+i, ERROR)
+                self.loggin.emit("Acceso denegado a"+i, ERROR)
 
         folds = {}
         for filee, fold in proces:
-            if formatt.search(filee):
-                t1, t2, ext, err = rename(filee)
-                if isinstance(t2,str):
+            # print(fold, filee)
+            t1, t2, ext, err = rename(filee)
+            # print(t1,t2,ext)
+            if err:
+                self.loggin.emit("Error procesando: "+i, WARNING)
+                continue
+            if t2:
+                fill = t1+' - '+str(t2)+ext
+            else:
+                fill = t1+ext
+            if formatt.search(fill) or re.match('[0-9]+x?[0-9]*', fill, re.I):
+                if isinstance(t2, str):
                     if 'x' in t2:
-                        t2=t2.split('x')[1]
-                if err:
-                    continue
+                        t2 = t2.split('x')[1]
                 if fold in folds:
-                    if folds[fold]<int(t2):
-                        folds[fold]=int(t2)
+                    if t1 in folds[fold]:
+                        if folds[fold][t1] < int(t2):
+                            folds[fold][t1]=int(t2)
+                    else:
+                        folds[fold][t1] = int(t2)
                 else:
-                    folds[fold]=int(t2)
+                    folds[fold] = {}
+                    folds[fold][t1] = int(t2)
         self.caps_list = folds
 
     def falta_caps(self):
@@ -159,16 +186,28 @@ class Falta(QWidget):
 
         folds = {}
         for filee, fold in proces:
-            if formatt.search(filee) or re.match('[0-9]+x?[0-9]*',filee,re.I):
-                t1, t2, ext, err = rename(filee)
-                if isinstance(t2,str):
+            # print(fold, filee)
+            t1, t2, ext, err = rename(filee)
+            # print(t1,t2,ext)
+            if err:
+                self.loggin.emit("Error procesando: "+i, WARNING)
+                continue
+            if t2:
+                fill = t1+' - '+str(t2)+ext
+            else:
+                fill = t1+ext
+            if formatt.search(fill) or re.match('[0-9]+x?[0-9]*', fill, re.I):
+                if isinstance(t2, str):
                     if 'x' in t2:
-                        t2=t2.split('x')[1]
-                #print(t1,t2,ext,err)
-                if err:
-                    continue
+                        t2 = t2.split('x')[1]
                 if fold in folds:
-                    folds[fold].append(int(t2))
+                    if t1 in folds[fold]:
+                        folds[fold][t1].append(int(t2))
+                    else:
+                        folds[fold][t1] = [int(t2)]
                 else:
-                    folds[fold] = [int(t2)]
+                    folds[fold] = {}
+                    folds[fold][t1] = [int(t2)]
+        #print(folds)
+
         self.caps_list = folds
