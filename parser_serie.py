@@ -17,7 +17,7 @@ except:
     json.dump(keep, open(os.path.join(MODULE, 'keep_join.json'),'w'))
     keep = set(keep)
 
-tokens = re.compile('[a-zA-Z0-9!\']+')
+tokens = re.compile('[a-zA-Z0-9!ñÑ\']+')
 normsp = re.compile('  +')
 daysstr = ['lunes', 'martes', 'mi[eé]rcoles', 'jueves', 'viernes', 's[áa]bado', 'domingo',
            'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -54,6 +54,9 @@ def transform(txt):
 
 
 def clean(txt):
+    txt = txt.replace('?','\?')
+    txt = txt.replace('+','\+')
+    txt = txt.replace('.','\.')
     txt = days.sub('', txt)
     txt = dates.sub('', txt)
     txt = resolution.sub('', txt)
@@ -84,7 +87,10 @@ def parse(txt):
     if groupsop.search(seps[0]):
         toks = ['']+toks
     while len(seps) != len(toks):
-        seps = seps+['']
+        if len(seps)<len(toks):
+            seps = seps+['']
+        else:
+            toks = toks+['']
     return toks, seps
 
 

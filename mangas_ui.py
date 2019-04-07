@@ -8,6 +8,7 @@ from PyQt5.QtCore import Qt, QByteArray
 from PyQt5.QtGui import QPixmap, QIcon
 from mvrename import MoveRename
 from falta import Falta
+from ftp_manager import FTPGui
 from utils import logcolor
 from appicon import icon
 
@@ -24,6 +25,9 @@ class Main(QMainWindow):
         self.cw2 = Falta()
         self.tabw.addTab(self.cw2,'Falta')
 
+        self.cw3 = FTPGui()
+        self.tabw.addTab(self.cw3,'FTP')
+
         self.tabw.setTabShape(QTabWidget.Triangular)
         self.tabw.setTabPosition(QTabWidget.West)
         self.setCentralWidget(self.tabw)
@@ -36,6 +40,7 @@ class Main(QMainWindow):
         self.addDockWidget(Qt.BottomDockWidgetArea, self.logsdock)
         self.cw1.loggin.connect(self.loggin)
         self.cw2.loggin.connect(self.loggin)
+        self.cw3.loggin.connect(self.loggin)
 
     def loggin(self, txt, level):
         if self.logs.document().lineCount() > 1000:

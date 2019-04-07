@@ -9,7 +9,7 @@ if sys.platform == 'win32':
 options = {
     'build_exe': {
         'includes': ['atexit', 'utils', 'mvrename', 'falta', 'appicon',
-                      'stopwords', 'parser_serie'],
+                      'stopwords', 'parser_serie', 'ftp_manager'],
         'optimize': 2
     }
 }
