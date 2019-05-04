@@ -50,7 +50,7 @@ def editDistance(a, b, transf=True):
                     m[i][j] = m[i-1][j-1]
                 else:
                     m[i][j] = min(
-                        m[i-1][j-1]+1, (min(m[i][j-1]+1, m[i-1][j]+1)))
+                        m[i-1][j-1]+1, min(m[i][j-1]+1, m[i-1][j]+1))
         ret = m[len(b)][len(a)]
         return ret
 
