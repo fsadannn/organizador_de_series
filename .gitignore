@@ -1,5 +1,7 @@
 *.pyc
 build
+dist
 .vscode
+__pycache__
 keep_join.json
 formats.json

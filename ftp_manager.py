@@ -1,16 +1,29 @@
-import ftplib
-import ftputil
-from utils import INFORMATION, WARNING, DEBUG, ERROR, formats, formatt
+
+from utils import INFORMATION, WARNING, DEBUG, ERROR, video_formats
 from utils import rename, editDistance
+from utils import parse_serie_guessit as parse
+from parser_serie import transform
 import os
 import re
 import sys
+import time
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFileDialog
 from PyQt5.QtWidgets import QHBoxLayout, QPushButton, QRadioButton
-from PyQt5.QtWidgets import QListWidget, QLineEdit, QButtonGroup
+from PyQt5.QtWidgets import QLineEdit, QButtonGroup
+from PyQt5.QtWidgets import QListWidget, QListWidgetItem
 from PyQt5.QtWidgets import QLabel, QProgressBar
+from PyQt5.QtGui import QIntValidator, QRegExpValidator
+from PyQt5.QtCore import QRegExp
+from sync import make_temp_fs
+from copier import Copier
+import fs
+from fs.wrap import cache_directory, read_only
+from fs.errors import RemoteConnectionError, IllegalBackReference
 from threading import Thread
+from fs.path import join, splitext, split, normpath, frombase
+import qtawesome as qta
+
 
 def points(name):
     if re.search('anime|managa',name,re.I) :
@@ -19,169 +32,152 @@ def points(name):
         return 1
     return 2
 
-class Wrapper:
-    def __init__(self, total, callback):
-        self.total = total
-        self.acum = 0
-        self.callback = callback
-    def __call__(self, data):
-        self.acum+=len(data)
-        percent = int(self.acum/self.total*100)
-        self.callback(percent)
 
-class MySession(ftplib.FTP):
-
-    def __init__(self, host, userid, password, port):
-        """Act like ftplib.FTP's constructor but connect to another port."""
-        ftplib.FTP.__init__(self)
-        self.connect(host, port)
-        self.login(userid, password)
-
-
-#ftputil.FTPHost(host, userid, password, port=port, session_factory=MySession)
+def skey(a):
+    if re.search('anime|manga',a.name,re.I):
+        return 0
+    else:
+        return 1
 
 class FTPManager:
 
     def __init__(self, host, user, password, port=21, logger=None):
-        self.ftp = ftputil.FTPHost(
-            host, user, password, port=port, session_factory=MySession)
+        self.ftp = cache_directory(read_only(fs.open_fs('ftp://'+user+':'+password+'@'+host+':'+str(port))))
+        self.ftp.desc('/')
         self.caps_list = {}
         self.results = []
         self.logger = logger
+        self.copier = Copier(num_workers=1)
+        self.copier.start()
+
+    def close(self):
+        self.ftp.close()
+        self.copier.stop()
 
     def list_dir(self, top):
-        top = ftputil.tool.as_unicode(top)
-        try:
-            names = self.ftp.listdir(top)
-        except ftputil.error.FTPOSError as err:
-            if logger:
-                self.logger.emit(str(err),ERROR)
-        dirs = []
-        for name in names:
-            if self.ftp.path.isdir(self.ftp.path.join(top, name)):
-                dirs.append(name)
-        return dirs
+        return [i.name for i in self.ftp.scandir(top) if i.is_dir]
 
-    def download(self, patha, base, call=None):
-        st = self.ftp.stat(patha)
-        sz = st.st_size
-        if call:
-            wrap = Wrapper(sz, call)
-            self.ftp.download(patha, base, wrap)
-        else:
-            self.ftp.download(patha, base)
+    def download(self, src_pth, src_file , dest_pth, dest_file, call=None):
 
+        ff = fs.open_fs(dest_pth)
+        self.copier.copy(self.ftp, join(src_pth, src_file),
+                        ff, join('/', dest_file),
+                        call, inject_fs=True)
 
     def find_nexts(self, top='/', deep=0, maxdeep=2):
         if deep==0:
             self.results = []
-        top = ftputil.tool.as_unicode(top)
         # print(top)
         if deep > maxdeep:
             return
         if self.logger:
             self.logger.emit(top, INFORMATION)
-        try:
-            names = self.ftp.listdir(top)
-        except ftputil.error.FTPOSError as err:
-            if logger:
-                self.logger.emit(str(err),ERROR)
-            return
         dirs, nondirs = [], []
-        for name in names:
-            if self.ftp.path.isdir(self.ftp.path.join(top, name)):
+        for name in self.ftp.scandir(top):
+            if name.is_dir:
                 dirs.append(name)
-            elif self.ftp.path.splitext(name)[1] in formats:
+            elif splitext(name.name)[1].lower() in video_formats:
                 nondirs.append(name)
         # print(dirs,nondirs)
         for fil in nondirs:
-            t1, t2, ext, err = rename(fil)
-            # print(t1,t2,ext)
-            if err:
+            pp = rename(fil.name)
+            t1 = ''
+            t2 = 0
+            try:
+                if pp.is_video:
+                    if pp.episode:
+                        t1 = transform(pp.title)
+                        fill = t1
+                        if pp.season:
+                            fill+= ' - '+str(pp.season)+'x'+str(pp.episode)
+                        else:
+                            fill+= ' - '+str(pp.episode)
+                        fill+=pp.ext
+                    else:
+                        continue
+                    t2 = pp.episode
+                else:
+                    continue
+            except KeyError:
                 if self.logger:
                     self.logger.emit("Error procesando: "+i, WARNING)
                 continue
-            best = None
-            bd = 100
+            bedd = 100
+            gap=2
+            near = ''
             for j in self.caps_list.keys():
-                d1 = editDistance(j,t1, False)
-                d2 = editDistance(j,t1,True)
-                if d1<4 or d2<=2:
-                    bdt = 10*d1+d2
-                    if isinstance(t2, str):
-                        if 'x' in t2:
-                            t2 = t2.split('x')[1]
-                    if bdt<bd and int(t2)>self.caps_list[j]:
-                        best = (j, fil, top)
-            if best:
-                self.results.append(best)
-                if self.logger:
-                    self.logger.emit('Encontrado: '+str(best), INFORMATION)
-
-        def skey(a):
-            if re.search('anime|manga',a,re.I):
-                return 0
-            else:
-                return 1
-        for name in sorted(dirs,key=skey):
-            path = self.ftp.path.join(top, name)
-            if not self.ftp.path.islink(path):
-                self.find_nexts(path, deep+1, maxdeep)
-
-    def last(self, base):
-        l = os.listdir(base)
-        proces = []
-        folds = []
-        for i in l:
-            path = os.path.join(base, i)
-            if os.path.isdir(path):
-                folds.append(i)
-        for i in folds:
-            path = os.path.join(base, i)
-            try:
-                t = os.listdir(path)
-                for j in t:
-                    if os.path.isfile(os.path.join(path, j)) and (os.path.splitext(j)[1] in formats):
-                        proces.append((j, i))
-            except PermissionError as e:
-                if self.loggin:
-                    try:
-                        self.logger.emit("Acceso denegado a"+i, ERROR)
-                    except:
-                        self.logger.error("Acceso denegado a"+i)
-
-        folds = {}
-        for filee, fold in proces:
-            # print(fold, filee)
-            t1, t2, ext, err = rename(filee)
-            # print(t1,t2,ext)
-            if err:
-                if self.logger:
-                    try:
-                        self.logger.emit("Error procesando: "+i, WARNING)
-                    except:
-                        self.logger.warning("Error procesando: "+i)
-                continue
-            if t2:
-                fill = t1+' - '+str(t2)+ext
-            else:
-                fill = t1+ext
-            if formatt.search(fill) or re.match('[0-9]+x?[0-9]*', fill, re.I):
+                edd = editDistance(t1, j, True)
+                if edd <= gap and edd < bedd:
+                    near = j
+                    bedd = edd
+                    if edd == 0:
+                        break
+            if near != '':
                 if isinstance(t2, str):
                     if 'x' in t2:
                         t2 = t2.split('x')[1]
+                    if int(t2)>self.caps_list[near]:
+                        best = (near, fil.name, top, fill)
+                        self.results.append(best)
+                        if self.logger:
+                            self.logger.emit('Encontrado: '+str(best), INFORMATION)
+
+        for name in sorted(dirs,key=skey):
+            path = join(top, name.name)
+            if not self.ftp.islink(path):
+                self.find_nexts(path, deep+1, maxdeep)
+
+    def last(self, base):
+        with read_only(fs.open_fs(base)) as ff:
+            proces = []
+            folds = []
+            for i in ff.scandir('/'):
+                if i.is_dir:
+                    folds.append(i)
+            for i in folds:
+                path = join('/', i.name)
+                try:
+                    for j in ff.scandir(path):
+                        if j.is_file and splitext(j.name)[1].lower() in video_formats:
+                            proces.append((j, i))
+                except (PermissionError, DirectoryExpected) as e:
+                    self.loggin.emit("Acceso denegado a"+join(base,i.name), ERROR)
+
+            folds = {}
+            for filee, fold in proces:
+                fold = fold.name
+                filee = filee.name
+                try:
+                    pp = parse(filee)
+                except Exception as e:
+                    self.loggin.emit("Error procesando: "+join(base,fold,filee), WARNING)
+                    self.loggin.emit(str(e), ERROR)
+                    continue
+                t1 = transform(pp.title)
+                fill = t1
+                if pp.episode:
+                    if pp.season:
+                        fill+= ' - '+str(pp.season)+'x'+str(pp.episode)
+                    else:
+                        fill+= ' - '+str(pp.episode)
+                    fill+=pp.ext
+                else:
+                    continue
+                t2 = pp.episode
+
                 if t1 in folds:
                     if folds[t1] < int(t2):
-                        folds[t1] = int(t2)
+                        folds[t1]=int(t2)
                 else:
                     folds[t1] = int(t2)
-        self.caps_list = folds
+            self.caps_list = folds
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.ftp.close()
+        self.copier.stop()
         return False
 
 
@@ -200,9 +196,13 @@ class FTPGui(QWidget):
         self.cl = QVBoxLayout()
 
         tt = QHBoxLayout()
-        self.local = QLabel('Local: ')
-        self.pathbar = QLineEdit()
-        self.pathbtn = QPushButton("Cambiar")
+        self.local = QLabel('Local: ', self)
+        self.pathbar = QLineEdit(self)
+        folder = qta.icon(
+            'fa5s.folder-open',
+            color='orange',
+            color_active='red')
+        self.pathbtn = QPushButton(folder ,"", self)
         tt.addWidget(self.local)
         tt.addWidget(self.pathbar)
         tt.addWidget(self.pathbtn)
@@ -210,10 +210,17 @@ class FTPGui(QWidget):
 
         tt = QHBoxLayout()
         self.iplable = QLabel('ip: ')
-        self.ip = QLineEdit()
+        self.ip = QLineEdit(self)
+        self.ip.setValidator(QRegExpValidator(QRegExp('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'), self.ip))
         self.portlable = QLabel('puerto: ')
-        self.port = QLineEdit()
-        self.ftpcon = QPushButton("Conectar")
+        self.port = QLineEdit(self)
+        self.port.setValidator(QIntValidator(self.port))
+        self.port.setText('21')
+        conn = qta.icon(
+            'mdi.lan-connect',
+            color='orange',
+            color_active='red')
+        self.ftpcon = QPushButton(conn, "", self)
         tt.addWidget(self.iplable)
         tt.addWidget(self.ip)
         tt.addSpacing(10)
@@ -224,10 +231,10 @@ class FTPGui(QWidget):
         self.cl.addLayout(tt)
 
         tt = QHBoxLayout()
-        self.userlable = QLabel('usuario: ')
-        self.user = QLineEdit()
-        self.passwtlable = QLabel('contraseña: ')
-        self.passw = QLineEdit()
+        self.userlable = QLabel('usuario: ', self)
+        self.user = QLineEdit(self)
+        self.passwtlable = QLabel('contraseña: ', self)
+        self.passw = QLineEdit(self)
         tt.addWidget(self.userlable)
         tt.addWidget(self.user)
         tt.addSpacing(10)
@@ -238,27 +245,36 @@ class FTPGui(QWidget):
 
         tt = QHBoxLayout()
         self.local = QLabel('FTP: ')
-        self.pathbarftp = QLineEdit()
+        self.pathbarftp = QLineEdit(self)
+        self.pathbarftp.setReadOnly(True)
         tt.addWidget(self.local)
         tt.addWidget(self.pathbarftp)
         self.cl.addLayout(tt)
 
-        self.li = QListWidget()
+        self.li = QListWidget(self)
         self.cl.addWidget(self.li)
         self.li.itemDoubleClicked.connect(self.ftp_move_to)
 
         tt = QHBoxLayout()
-        self.proc = QPushButton("Buscar")
+        find = qta.icon(
+            'fa5s.search',
+            color='orange',
+            color_active='red')
+        self.proc = QPushButton(find, "", self)
         tt.addWidget(self.proc)
         tt.addStretch()
         self.cl.addLayout(tt)
 
         tt = QVBoxLayout()
-        self.progresslabel = QLabel()
-        self.progress = QProgressBar()
+        tt2 = QHBoxLayout()
+        self.progresslabel = QLabel(self)
+        self.speedlabel = QLabel(self)
+        tt2.addWidget(self.progresslabel)
+        tt2.addWidget(self.speedlabel)
+        self.progress = QProgressBar(self)
         self.progress.setMinimum(0)
         self.progress.setMaximum(100)
-        tt.addWidget(self.progresslabel)
+        tt.addLayout(tt2)
         tt.addWidget(self.progress)
         self.cl.addLayout(tt)
 
@@ -267,7 +283,8 @@ class FTPGui(QWidget):
         self.proc.clicked.connect(self.procces)
         self.ftpcon.clicked.connect(self.connectar)
         self.ftpm = None
-        self.movethread = None
+        self.in_progress = False
+        self.time = 0
 
     def connectar(self):
         try:
@@ -287,24 +304,29 @@ class FTPGui(QWidget):
             return
         self.li.clear()
         for i in self.ftpm.list_dir('/'):
-            self.li.addItem(i)
+            item = QListWidgetItem(qta.icon(
+                    'fa5s.folder-open',
+                    color='orange'), i, self.li)
+            self.li.addItem(item)
 
     def ftp_move_to(self, item):
         txt = item.text()
-        if txt == '..':
-            self.ftpm.ftp.chdir('..')
-            self.li.clear()
-            if self.ftpm.ftp.getcwd() != '/':
-                self.li.addItem('..')
-            for i in self.ftpm.list_dir(self.ftpm.ftp.getcwd()):
-                self.li.addItem(i)
-        else:
-            self.ftpm.ftp.chdir(txt)
-            self.li.clear()
-            self.li.addItem('..')
-            for i in self.ftpm.list_dir(self.ftpm.ftp.getcwd()):
-                self.li.addItem(i)
-        self.pathbarftp.setText(self.ftpm.ftp.getcwd())
+        txt2 = normpath(join(self.pathbarftp.text(),txt))
+        self.li.clear()
+        try:
+            normpath(join(txt2,'..'))
+            item = QListWidgetItem(qta.icon(
+                    'fa5s.folder-open',
+                    color='orange'), '..', self.li)
+            self.li.addItem(item)
+        except IllegalBackReference:
+            pass
+        for i in self.ftpm.list_dir(txt2):
+            item = QListWidgetItem(qta.icon(
+                    'fa5s.folder-open',
+                    color='orange'), i, self.li)
+            self.li.addItem(item)
+        self.pathbarftp.setText(txt2)
 
 
     def get_path(self):
@@ -327,29 +349,46 @@ class FTPGui(QWidget):
     def download(self):
         base = self.pathbar.text()
         if base == '':
+            self.in_progress = False
             return
         if not self.ftpm:
+            self.in_progress = False
             return
         self.ftpm.last(base)
         self.loggin.emit('Buscando capítulos', INFORMATION)
         self.ftpm.find_nexts(self.pathbarftp.text())
         r = self.ftpm.results
         for i in r:
-            ftpp = self.ftpm.ftp.path.join(i[2],i[1])
-            self.progresslabel.setText(ftpp)
+            ftpp = join(i[2],i[1])
+            self.ftpm.download(i[2], i[1], base, i[3], self.update)
+        self.in_progress = False
+        self.speedlabel.clear()
+        #self.speedlabel.setText('')
+
+    def update(self, data):
+        if self.time == 0:
+            self.progresslabel.setText(data.src)
             self.progress.setValue(0)
-            self.ftpm.download(ftpp, os.path.join(base,i[1]), self.progress.setValue)
+            val = int(data.percent)
+            self.progress.setValue(val)
+            val = data.speed/1024
+            self.speedlabel.setText(str(val)+' Kb/s')
+            self.time = time.time()
+        else:
+            tt = time.time()
+            if tt-self.time>2:
+                val = int(data.percent)
+                self.progress.setValue(val)
+                val = data.speed/1024
+                self.speedlabel.setText(str(val)+' Kb/s')
+                self.time = tt
+        if data.finish:
+            data.dst_fs.close()
+            self.time = 0
 
     def procces(self):
-        # if self.movethread:
-        #     if self.movethread.isAlive():
-        #         self.loggin.emit('Hay un proceso en este momento, espere.', WARNING)
-        #         return
-        # self.movethread = Thread(target=self.download)
-        # self.movethread.start()
+        if self.in_progress:
+            self.loggin.emit('Hay un proceso en este momento, espere.', WARNING)
+            return
+        self.in_progress = True
         self.download()
-
-# f = FTPManager('127.0.0.1','test','1234',21)
-# def a(t):
-#     print(t)
-# f.download('/Mikosch.pdf','./Mikosch.pdf',a)

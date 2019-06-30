@@ -8,19 +8,22 @@ if sys.platform == 'win32':
 
 options = {
     'build_exe': {
-        'includes': ['atexit', 'utils', 'mvrename', 'falta', 'appicon',
-                      'stopwords', 'parser_serie', 'ftp_manager'],
+        'includes': ['atexit', 'utils', 'move_rename', 'falta', 'appicon',
+                      'stopwords', 'parser_serie', 'sync'],
+        'include_files': ['options.json'],
+        'packages': ['pkginfo', 'pkg_resources','babelfish', 'queue'],
+        'include_msvcr': True,
         'optimize': 2
     }
 }
 
 executables = [
-    Executable('mangas_ui.py', base=base,
+    Executable('main_ui.py', base=base,
                targetName='Organizador de Series.exe', icon='icon.ico')
 ]
 
 setup(name='Organizador',
-      version='3.5',
+      version='4.4',
       description='Organizador de Series',
       options=options,
       executables=executables

@@ -6,8 +6,15 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFileDialog
 from PyQt5.QtWidgets import QHBoxLayout, QPushButton, QRadioButton
 from PyQt5.QtWidgets import QTreeWidget, QLineEdit, QButtonGroup
 from PyQt5.QtWidgets import QTreeWidgetItem
-from utils import INFORMATION, WARNING, DEBUG, ERROR, formats, formatt
-from utils import rename, editDistance
+from utils import INFORMATION, WARNING, DEBUG, ERROR
+from utils import parse_serie_guessit as parse
+from utils import video_formats
+from parser_serie import transform
+import fs
+from fs.path import join, splitext, split
+from fs.wrap import read_only
+from fs.errors import DirectoryExpected
+import qtawesome as qta
 
 
 fff = re.compile('')
@@ -26,7 +33,11 @@ class Falta(QWidget):
 
         tt = QHBoxLayout()
         self.pathbar = QLineEdit()
-        self.pathbtn = QPushButton("Cambiar")
+        folder = qta.icon(
+            'fa5s.folder-open',
+            color='orange',
+            color_active='red')
+        self.pathbtn = QPushButton(folder,'')
         tt.addWidget(self.pathbar)
         tt.addWidget(self.pathbtn)
         self.cl.addLayout(tt)
@@ -49,7 +60,11 @@ class Falta(QWidget):
         self.cl.addWidget(self.li)
 
         tt = QHBoxLayout()
-        self.proc = QPushButton("Buscar")
+        find = qta.icon(
+            'fa5s.search',
+            color='orange',
+            color_active='red')
+        self.proc = QPushButton(find,"")
         tt.addWidget(self.proc)
         tt.addStretch()
         self.cl.addLayout(tt)
@@ -57,6 +72,20 @@ class Falta(QWidget):
         self.setLayout(self.cl)
         self.pathbtn.clicked.connect(self.set_path)
         self.proc.clicked.connect(self.procces)
+        self.li.itemExpanded.connect(self.change_open_icon)
+        self.li.itemCollapsed.connect(self.change_close_icon)
+
+    def change_open_icon(self, item):
+        folder = qta.icon(
+            'fa5s.folder-open',
+            color='orange')
+        item.setIcon(0, folder)
+
+    def change_close_icon(self, item):
+        folder = qta.icon(
+            'fa5s.folder',
+            color='orange')
+        item.setIcon(0, folder)
 
     def get_path(self):
         txt = self.pathbar.text()
@@ -78,6 +107,12 @@ class Falta(QWidget):
     def procces(self):
         if self.pathbar.text() == '':
             return
+        folder = qta.icon(
+            'fa5s.folder',
+            color='orange')
+        video = qta.icon(
+            'fa5s.file-video',
+            color='blue')
         li = self.li
         li.clear()
         if self.move.checkedId() == 1:
@@ -85,6 +120,7 @@ class Falta(QWidget):
             caps_list = self.caps_list
             for i in sorted(caps_list.keys()):
                 parent = QTreeWidgetItem()
+                parent.setIcon(0, folder)
                 parent.setText(0, i)
                 addp = False
                 for k in sorted(caps_list[i].keys()):
@@ -99,6 +135,7 @@ class Falta(QWidget):
                                     str(data[j]+1) + '-' + str(data[j+1]-1)
                                 addp = True
                             child = QTreeWidgetItem(parent)
+                            child.setIcon(0, video)
                             child.setText(0, txt)
                             parent.addChild(child)
                 #print(i, addp)
@@ -111,49 +148,54 @@ class Falta(QWidget):
             caps_list = self.caps_list
             for i in sorted(caps_list.keys()):
                 parent = QTreeWidgetItem()
+                parent.setIcon(0, folder)
                 parent.setText(0, i)
                 for k in sorted(caps_list[i].keys()):
                     txt = k + " - " + str(caps_list[i][k])
                     child = QTreeWidgetItem(parent)
+                    child.setIcon(0,video)
                     child.setText(0, txt)
                     parent.addChild(child)
                 li.addTopLevelItem(parent)
 
     def last(self):
         base = self.pathbar.text()
-        l = os.listdir(base)
-        proces = []
-        folds = []
-        for i in l:
-            path = os.path.join(base, i)
-            if os.path.isdir(path):
-                folds.append(i)
-        for i in folds:
-            path = os.path.join(base, i)
-            try:
-                t = os.listdir(path)
-                for j in t:
-                    if os.path.isfile(os.path.join(path, j)) and (os.path.splitext(j)[1] in formats):
-                        proces.append((j, i))
-            except PermissionError as e:
-                self.loggin.emit("Acceso denegado a"+i, ERROR)
+        with read_only(fs.open_fs(base)) as ff:
+            proces = []
+            folds = []
+            for i in ff.scandir('/'):
+                if i.is_dir:
+                    folds.append(i)
+            for i in folds:
+                path = join('/', i.name)
+                try:
+                    for j in ff.scandir(path):
+                        if j.is_file and splitext(j.name)[1] in video_formats:
+                            proces.append((j, i))
+                except (PermissionError, DirectoryExpected) as e:
+                    self.loggin.emit("Acceso denegado a"+join(base,i.name), ERROR)
 
-        folds = {}
-        for filee, fold in proces:
-            # print(fold, filee)
-            t1, t2, ext, err = rename(filee)
-            # print(t1,t2,ext)
-            if err:
-                self.loggin.emit("Error procesando: "+i, WARNING)
-                continue
-            if t2:
-                fill = t1+' - '+str(t2)+ext
-            else:
-                fill = t1+ext
-            if formatt.search(fill) or re.match('[0-9]+x?[0-9]*', fill, re.I):
-                if isinstance(t2, str):
-                    if 'x' in t2:
-                        t2 = t2.split('x')[1]
+            folds = {}
+            for filee, fold in proces:
+                fold = fold.name
+                filee = filee.name
+                try:
+                    pp = parse(filee)
+                except Exception as e:
+                    self.loggin.emit("Error procesando: "+join(base,fold,filee), WARNING)
+                    self.loggin.emit(str(e), ERROR)
+                    continue
+                t1 = transform(pp.title)
+                fill = t1
+                if pp.episode:
+                    if pp.season:
+                        fill+= ' - '+str(pp.season)+'x'+str(pp.episode)
+                    else:
+                        fill+= ' - '+str(pp.episode)
+                    fill+=pp.ext
+                else:
+                    continue
+                t2 = pp.episode
                 if fold in folds:
                     if t1 in folds[fold]:
                         if folds[fold][t1] < int(t2):
@@ -163,43 +205,45 @@ class Falta(QWidget):
                 else:
                     folds[fold] = {}
                     folds[fold][t1] = int(t2)
-        self.caps_list = folds
+            self.caps_list = folds
 
     def falta_caps(self):
         base = self.pathbar.text()
-        l = os.listdir(base)
-        proces = []
-        folds = []
-        for i in l:
-            path = os.path.join(base, i)
-            if os.path.isdir(path):
-                folds.append(i)
-        for i in folds:
-            path = os.path.join(base, i)
-            try:
-                t = os.listdir(path)
-                for j in t:
-                    if os.path.isfile(os.path.join(path, j)) and (os.path.splitext(j)[1] in formats):
-                        proces.append((j, i))
-            except PermissionError as e:
-                self.loggin.emit("Acceso denegado a"+i, ERROR)
+        with read_only(fs.open_fs(base)) as ff:
+            proces = []
+            folds = []
+            for i in ff.scandir('/'):
+                if i.is_dir:
+                    folds.append(i)
+            for i in folds:
+                path = join('/', i.name)
+                try:
+                    for j in ff.scandir(path):
+                        if j.is_file and splitext(j.name)[1] in video_formats:
+                            proces.append((j, i))
+                except (PermissionError, DirectoryExpected) as e:
+                    self.loggin.emit("Acceso denegado a"+join(base,i.name), ERROR)
 
-        folds = {}
-        for filee, fold in proces:
-            # print(fold, filee)
-            t1, t2, ext, err = rename(filee)
-            # print(t1,t2,ext)
-            if err:
-                self.loggin.emit("Error procesando: "+i, WARNING)
-                continue
-            if t2:
-                fill = t1+' - '+str(t2)+ext
-            else:
-                fill = t1+ext
-            if formatt.search(fill) or re.match('[0-9]+x?[0-9]*', fill, re.I):
-                if isinstance(t2, str):
-                    if 'x' in t2:
-                        t2 = t2.split('x')[1]
+            folds = {}
+            for filee, fold in proces:
+                fold = fold.name
+                filee = filee.name
+                try:
+                    pp = parse(filee)
+                except Exception as e:
+                    self.loggin.emit("Error procesando: "+join(base,fold,filee), WARNING)
+                    continue
+                t1 = transform(pp.title)
+                fill = t1
+                if pp.episode:
+                    if pp.season:
+                        fill+= ' - '+str(pp.season)+'x'+str(pp.episode)
+                    else:
+                        fill+= ' - '+str(pp.episode)
+                    fill+=pp.ext
+                else:
+                    continue
+                t2 = pp.episode
                 if fold in folds:
                     if t1 in folds[fold]:
                         folds[fold][t1].append(int(t2))
@@ -208,6 +252,4 @@ class Falta(QWidget):
                 else:
                     folds[fold] = {}
                     folds[fold][t1] = [int(t2)]
-        #print(folds)
-
-        self.caps_list = folds
+            self.caps_list = folds

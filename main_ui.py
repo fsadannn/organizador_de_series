@@ -6,12 +6,11 @@ from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtWidgets import QTextEdit, QDockWidget, QTabWidget
 from PyQt5.QtCore import Qt, QByteArray
 from PyQt5.QtGui import QPixmap, QIcon
-from mvrename import MoveRename
+from move_rename import MoveRename
 from falta import Falta
 from ftp_manager import FTPGui
 from utils import logcolor
 from appicon import icon
-
 
 class Main(QMainWindow):
 
@@ -50,13 +49,15 @@ class Main(QMainWindow):
 
 
 #if __name__ == '__main__':
+
 app = QApplication(sys.argv)
+app.setStyle('Fusion')
 w = Main()
 ic, ext=icon()
 qtimgd = QByteArray(ic)
 px = QPixmap()
 px.loadFromData(qtimgd, ext)
 app.setWindowIcon(QIcon(px))
-w.show()
 w.resize(784, 521)
+w.show()
 sys.exit(app.exec_())

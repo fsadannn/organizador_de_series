@@ -2,7 +2,8 @@ import re
 import os
 import sys
 import json
-from parser_serie import rename_serie, transform
+from guessit import guessit
+from parser_serie import rename_serie
 
 if hasattr(sys, 'frozen'):
     MODULE = os.path.dirname(sys.executable)
@@ -29,15 +30,67 @@ def logsize(txt, size):
     return "<h"+str(size)+">"+txt+"</h"+str(size)+">"
 
 
-def editDistance(a, b, transf=True):
+class CapData:
+    def __init__(self, name, nameep, num, ext, informats, err, season=None, mimetype=None):
+        self._things = {'title': name, 'episode_title': nameep, 'episode': num,
+                        'ext': ext, 'is_video': informats, 'error': err,
+                        'mimetype': mimetype, 'season': season}
+        self._map = {0: name, 1: num, 2: ext, 3: informats, 4: nameep, 5: err}
+
+    def __getattr__(self, name):
+        classname = self.__class__.__name__
+        if name in self._things:
+            return self._things[name]
+        raise AttributeError("\'{classname}\' object has no attribute \'{name}\'".format(**locals()))
+
+    def __getitem__(self, item):
+        if item in self._things:
+            return self._things[item]
+        if item in self._map:
+            return self._map[item]
+        raise KeyError(str(self.__class__.__name__)+" don\'t have key "+str(item))
+
+    def __str__(self):
+        return str(self._things)
+
+subs_formats = set([".srt",".idx",".sub",".ssa",".ass"])
+video_formats = set([".3g2",
+                ".3gp",
+                ".3gp2",
+                ".asf",
+                ".avi",
+                ".divx",
+                ".flv",
+                ".mk3d",
+                ".m4v",
+                ".mk2",
+                ".mka",
+                ".mkv",
+                ".mov",
+                ".mp4",
+                ".mp4a",
+                ".mpeg",
+                ".mpg",
+                ".ogg",
+                ".ogm",
+                ".ogv",
+                ".ra",
+                ".ram",
+                ".rm",
+                ".ts",
+                ".wav",
+                ".webm",
+                ".wma",
+                ".wmv",
+                ".vob"])
+
+
+def editDistance(a, b, lower=False):
         """Distancia de Leventein entre dos cadenas de texto.
             a,b son string
             devuelve un int
         """
-        if transf:
-            a = transform(a)
-            b = transform(b)
-        else:
+        if lower:
             a = a.lower()
             b = b.lower()
         m = []
@@ -55,27 +108,61 @@ def editDistance(a, b, transf=True):
         return ret
 
 
-eb = re.compile('\{.+\}|\(.+\)|\[.+\]')
-epi = re.compile('[Ee]pisodio|[Cc]ap[ií]tulo')
-split = re.compile('([0-9]+[xX]?[0-9]*) *-? *')
-normsp = re.compile('  +')
-endesp = re.compile(' +$')
-begesp = re.compile('^ +')
-try:
-    formats = json.load(open(os.path.join(MODULE, 'formats.json')))
-except:
-    formats = {'.mp4': 0, '.mkv': 0, '.avi': 0, '.rm': 0, '.rmv': 0, '.str': 0,
-               '.mpg': 0, '.mpeg': 0}
-    json.dump(formats, open(os.path.join(MODULE, 'formats.json'),'w'), indent=1)
+def parse_serie_guessit(title, params=None):
+    if not params:
+        params = '--json --no-default-config -E -t episode -c \"'+os.path.join(MODULE,'options.json\"')
+    txt, ext = os.path.splitext(title)
+    ext = ext.lower()
+    a = guessit(title, params)
+    titlee = a['title']
+    ept = ''
+    try:
+        ept = a['episode_title']
+    except:
+        pass
+    ep = ''
+    try:
+        ep = a['episode']
+    except:
+        pass
+    mime = None
+    try:
+        mime = a['mimetype']
+    except:
+        pass
+    ss = None
+    try:
+        ss = a['season']
+    except:
+        pass
+    dd = CapData(titlee, ept, ep, ext,  bool(ext in video_formats),
+            False, ss, mime)
+    return dd
 
 
 def rename(name):
     err = False
     txt, ext = os.path.splitext(name)
+    ext = ext.lower()
     try:
-        t1, t2 = rename_serie(txt)
+        t1, t2, t3 = rename_serie(txt)
     except (ValueError, IndexError):
-        return '', '', '', True
-    return t1, t2, ext, err
+        try:
+            rr = parse_serie_guessit(name)
+            ep = ''
+            if 'episode' in rr:
+                ep = rr['episode']
+            ept = ''
+            if 'episode_title' in rr:
+                ept = rr['episode_title']
+            return CapData(rr['title'], ept, ep, ext, bool(ext in video_formats), err)
+        except:
+            return CapData(txt, '', '', ext, bool(ext in video_formats), True)
+    data = {''}
+    return CapData(t1, t3, t2, ext, bool(ext in video_formats), err)
 
-formatt = re.compile(' *- *([0-9]+)')
+
+def temp_format(ss):
+    return '[Temp '+str(ss)+']'
+
+temp_gap = len(temp_format('10'))
