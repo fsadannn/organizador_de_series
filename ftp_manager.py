@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import QHBoxLayout, QPushButton, QRadioButton
 from PyQt5.QtWidgets import QLineEdit, QButtonGroup
 from PyQt5.QtWidgets import QListWidget, QListWidgetItem
 from PyQt5.QtWidgets import QLabel, QProgressBar
+from PyQt5.QtWidgets import QToolButton, QMenu
 from PyQt5.QtGui import QIntValidator, QRegExpValidator
 from PyQt5.QtCore import QRegExp
 from sync import make_temp_fs
@@ -47,7 +48,7 @@ class FTPManager:
         self.caps_list = {}
         self.results = []
         self.logger = logger
-        self.copier = Copier(num_workers=1)
+        self.copier = Copier(num_workers=None)
         self.copier.start()
 
     def close(self):
@@ -70,8 +71,8 @@ class FTPManager:
         # print(top)
         if deep > maxdeep:
             return
-        if self.logger:
-            self.logger.emit(top, INFORMATION)
+        #if self.logger:
+        #    self.logger.emit(top, INFORMATION)
         dirs, nondirs = [], []
         for name in self.ftp.scandir(top):
             if name.is_dir:
@@ -235,6 +236,7 @@ class FTPGui(QWidget):
         self.user = QLineEdit(self)
         self.passwtlable = QLabel('contraseña: ', self)
         self.passw = QLineEdit(self)
+        self.passw.setEchoMode(QLineEdit.Password)
         tt.addWidget(self.userlable)
         tt.addWidget(self.user)
         tt.addSpacing(10)
@@ -263,20 +265,24 @@ class FTPGui(QWidget):
         self.proc = QPushButton(find, "", self)
         tt.addWidget(self.proc)
         tt.addStretch()
+        #self.configs = QToolButton(self)
+        #self.configs.setPopupMode(QToolButton.InstantPopup)
+        #self.confmenu = QMenu(self.configs)
+        #tt.addWidget(self.configs)
         self.cl.addLayout(tt)
 
-        tt = QVBoxLayout()
-        tt2 = QHBoxLayout()
-        self.progresslabel = QLabel(self)
-        self.speedlabel = QLabel(self)
-        tt2.addWidget(self.progresslabel)
-        tt2.addWidget(self.speedlabel)
-        self.progress = QProgressBar(self)
-        self.progress.setMinimum(0)
-        self.progress.setMaximum(100)
-        tt.addLayout(tt2)
-        tt.addWidget(self.progress)
-        self.cl.addLayout(tt)
+        # tt = QVBoxLayout()
+        # tt2 = QHBoxLayout()
+        # self.progresslabel = QLabel(self)
+        # self.speedlabel = QLabel(self)
+        # tt2.addWidget(self.progresslabel)
+        # tt2.addWidget(self.speedlabel)
+        # self.progress = QProgressBar(self)
+        # self.progress.setMinimum(0)
+        # self.progress.setMaximum(100)
+        # tt.addLayout(tt2)
+        # tt.addWidget(self.progress)
+        # self.cl.addLayout(tt)
 
         self.setLayout(self.cl)
         self.pathbtn.clicked.connect(self.set_path)
@@ -285,6 +291,7 @@ class FTPGui(QWidget):
         self.ftpm = None
         self.in_progress = False
         self.time = 0
+        self.movethread = None
 
     def connectar(self):
         try:
@@ -360,10 +367,13 @@ class FTPGui(QWidget):
         r = self.ftpm.results
         for i in r:
             ftpp = join(i[2],i[1])
-            self.ftpm.download(i[2], i[1], base, i[3], self.update)
+            #self.ftpm.download(i[2], i[1], base, i[3], self.update)
+            self.ftpm.download(i[2], i[1], base, i[3])
+            self.loggin.emit('Descargando '+ i[1]  , INFORMATION)
         self.in_progress = False
-        self.speedlabel.clear()
+        #self.speedlabel.clear()
         #self.speedlabel.setText('')
+        self.loggin.emit('Descarga finalizada', INFORMATION)
 
     def update(self, data):
         if self.time == 0:
@@ -387,8 +397,15 @@ class FTPGui(QWidget):
             self.time = 0
 
     def procces(self):
-        if self.in_progress:
-            self.loggin.emit('Hay un proceso en este momento, espere.', WARNING)
-            return
-        self.in_progress = True
-        self.download()
+        if self.movethread:
+            if self.movethread.isAlive():
+                self.loggin.emit('Hay un proceso en este momento, espere.', WARNING)
+                return
+        self.movethread = Thread(target=self.download)
+        self.movethread.start()
+
+        # if self.in_progress:
+        #     self.loggin.emit('Hay un proceso en este momento, espere.', WARNING)
+        #     return
+        # self.in_progress = True
+        # self.download()
