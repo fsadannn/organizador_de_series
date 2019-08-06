@@ -14,6 +14,7 @@ from sync import make_temp_fs
 import fs
 from fs.path import join, splitext, split
 import qtawesome as qta
+from utils import Logger
 
 
 if hasattr(sys, 'frozen'):
@@ -26,11 +27,11 @@ else:
 
 class MoveRename(QWidget):
 
-    loggin = pyqtSignal(str, int)
+    logginn = pyqtSignal(str, str, int)
 
     def __init__(self):
         super(MoveRename, self).__init__()
-
+        self.loggin = Logger('MoveRenameGui', self.logginn)
         self.cl = QVBoxLayout()
 
         tt = QHBoxLayout()

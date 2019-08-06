@@ -4,6 +4,21 @@ import sys
 import json
 from guessit import guessit
 from parser_serie import rename_serie
+from PyQt5.QtCore import pyqtSignal, QObject
+
+class Logger(QObject):
+    __slots__ = ('__name', '__signal')
+    def __init__(self, name, signal):
+        self.__name = name
+        self.__signal = signal
+
+    def emit(self, txt, num):
+        self.__signal.emit(self.__name, txt, num)
+
+    @property
+    def signal(self):
+        return self.__signal
+
 
 if hasattr(sys, 'frozen'):
     MODULE = os.path.dirname(sys.executable)
@@ -17,9 +32,10 @@ INFORMATION = 0
 WARNING = 1
 ERROR = 2
 DEBUG = 3
+NAME = 4
 
 LOG_COLORS = {INFORMATION: "green", WARNING: "orange", ERROR: "red",
-              DEBUG: "blue"}
+              DEBUG: "blue", NAME: "yellow"}
 
 
 def logcolor(txt, level):
@@ -151,7 +167,10 @@ def rename(name):
             rr = parse_serie_guessit(name)
             ep = ''
             if 'episode' in rr:
-                ep = rr['episode']
+                if isinstance(rr['episode'], list) or isinstance(rr['episode'],tuple):
+                    ep = rr['episode'][-1]
+                else:
+                    ep = rr['episode']
             ept = ''
             if 'episode_title' in rr:
                 ept = rr['episode_title']

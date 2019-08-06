@@ -9,8 +9,10 @@ from PyQt5.QtGui import QPixmap, QIcon
 from move_rename import MoveRename
 from falta import Falta
 from ftp_manager import FTPGui
+from file_sync import FileGui
 from utils import logcolor
 from appicon import icon
+from utils import NAME
 
 class Main(QMainWindow):
 
@@ -27,6 +29,9 @@ class Main(QMainWindow):
         self.cw3 = FTPGui()
         self.tabw.addTab(self.cw3,'FTP')
 
+        self.cw4 = FileGui()
+        self.tabw.addTab(self.cw4,'File')
+
         self.tabw.setTabShape(QTabWidget.Triangular)
         self.tabw.setTabPosition(QTabWidget.West)
         self.setCentralWidget(self.tabw)
@@ -37,15 +42,17 @@ class Main(QMainWindow):
         self.logsdock.setWidget(self.logs)
         self.logsdock.setFeatures(QDockWidget.DockWidgetMovable)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.logsdock)
-        self.cw1.loggin.connect(self.loggin)
-        self.cw2.loggin.connect(self.loggin)
-        self.cw3.loggin.connect(self.loggin)
+        self.cw1.logginn.connect(self.loggin)
+        self.cw2.logginn.connect(self.loggin)
+        self.cw3.logginn.connect(self.loggin)
+        self.cw4.logginn.connect(self.loggin)
 
-    def loggin(self, txt, level):
+    def loggin(self, name, txt, level):
         if self.logs.document().lineCount() > 1000:
             self.logs.clear()
-        txt = logcolor(txt, level)
-        self.logs.append(txt)
+        txtt = logcolor(name+': ', NAME)
+        txtt += logcolor(txt, level)
+        self.logs.append(txtt)
 
 
 #if __name__ == '__main__':

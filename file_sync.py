@@ -25,21 +25,21 @@ from sync import BaseManager
 from utils import Logger
 
 
-class FTPManager(BaseManager):
+class FileManager(BaseManager):
 
-    def __init__(self, host, user, password, port=21, logger=None):
-        self.ftp = fs.open_fs('ftp://'+user+':'+password+'@'+host+':'+str(port))
-        super(FTPManager, self).__init__(self.ftp, logger)
+    def __init__(self, path, logger=None):
+        self.file = fs.open_fs(path)
+        super(FileManager, self).__init__(self.file, logger)
 
 
-class FTPGui(QWidget):
+class FileGui(QWidget):
 
     logginn = pyqtSignal(str, str, int)
 
     def __init__(self):
-        super(FTPGui, self).__init__()
+        super(FileGui, self).__init__()
         self.cl = QVBoxLayout()
-        self.loggin = Logger('FTPGui', self.logginn)
+        self.loggin = Logger('FileGui', self.logginn)
 
         tt = QHBoxLayout()
         self.local = QLabel('Local: ', self)
@@ -55,43 +55,21 @@ class FTPGui(QWidget):
         self.cl.addLayout(tt)
 
         tt = QHBoxLayout()
-        self.iplable = QLabel('ip: ')
-        self.ip = QLineEdit(self)
-        self.ip.setValidator(QRegExpValidator(QRegExp('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'), self.ip))
-        self.portlable = QLabel('puerto: ')
-        self.port = QLineEdit(self)
-        self.port.setValidator(QIntValidator(self.port))
-        self.port.setText('21')
-        conn = qta.icon(
-            'mdi.lan-connect',
+        self.other = QLabel('Otro: ', self)
+        self.pathbar2 = QLineEdit(self)
+        folder = qta.icon(
+            'fa5s.folder-open',
             color='orange',
             color_active='red')
-        self.ftpcon = QPushButton(conn, "", self)
-        tt.addWidget(self.iplable)
-        tt.addWidget(self.ip)
-        tt.addSpacing(10)
-        tt.addWidget(self.portlable)
-        tt.addWidget(self.port)
-        tt.addSpacing(10)
-        tt.addWidget(self.ftpcon)
+        self.pathbtn2 = QPushButton(folder ,"", self)
+        tt.addWidget(self.other)
+        tt.addWidget(self.pathbar2)
+        tt.addWidget(self.pathbtn2)
         self.cl.addLayout(tt)
 
-        tt = QHBoxLayout()
-        self.userlable = QLabel('usuario: ', self)
-        self.user = QLineEdit(self)
-        self.passwtlable = QLabel('contraseña: ', self)
-        self.passw = QLineEdit(self)
-        self.passw.setEchoMode(QLineEdit.Password)
-        tt.addWidget(self.userlable)
-        tt.addWidget(self.user)
-        tt.addSpacing(10)
-        tt.addWidget(self.passwtlable)
-        tt.addWidget(self.passw)
-        tt.addSpacing(10)
-        self.cl.addLayout(tt)
 
         tt = QHBoxLayout()
-        self.local = QLabel('FTP: ')
+        self.local = QLabel('Folders: ')
         self.pathbarftp = QLineEdit(self)
         self.pathbarftp.setReadOnly(True)
         tt.addWidget(self.local)
@@ -110,46 +88,34 @@ class FTPGui(QWidget):
         self.proc = QPushButton(find, "", self)
         tt.addWidget(self.proc)
         tt.addStretch()
-        #self.configs = QToolButton(self)
-        #self.configs.setPopupMode(QToolButton.InstantPopup)
-        #self.confmenu = QMenu(self.configs)
-        #tt.addWidget(self.configs)
+        self.move = QButtonGroup()
+        tt1 = QRadioButton("Todos")
+        tt2 = QRadioButton("Último")
+        tt2.setChecked(True)
+        self.move.addButton(tt1, 2)
+        self.move.addButton(tt2, 1)
+        self.move.setExclusive(True)
+        tt.addWidget(tt1)
+        tt.addWidget(tt2)
         self.cl.addLayout(tt)
-
-        # tt = QVBoxLayout()
-        # tt2 = QHBoxLayout()
-        # self.progresslabel = QLabel(self)
-        # self.speedlabel = QLabel(self)
-        # tt2.addWidget(self.progresslabel)
-        # tt2.addWidget(self.speedlabel)
-        # self.progress = QProgressBar(self)
-        # self.progress.setMinimum(0)
-        # self.progress.setMaximum(100)
-        # tt.addLayout(tt2)
-        # tt.addWidget(self.progress)
-        # self.cl.addLayout(tt)
 
         self.setLayout(self.cl)
         self.pathbtn.clicked.connect(self.set_path)
         self.proc.clicked.connect(self.procces)
-        self.ftpcon.clicked.connect(self.connectar)
+        self.pathbtn2.clicked.connect(self.set_path2)
         self.ftpm = None
         self.in_progress = False
         self.time = 0
         self.movethread = None
 
-    def connectar(self):
-        try:
-            port = int(self.port.text())
-        except:
-            self.loggin.emit('Puerto incorrect', ERROR)
+
+    def set_path2(self):
+        dirr = self.get_path()
+        if dirr is None or dirr == '':
             return
-        ip = self.ip.text()
-        if len(ip.split('.')) != 4:
-            self.loggin.emit('ip incorrect', ERROR)
-            return
+        self.pathbar2.setText(dirr)
         try:
-            self.ftpm = FTPManager(ip, self.user.text(), self.passw.text(), port, self.loggin)
+            self.ftpm = FileManager(dirr, self.loggin)
             self.pathbarftp.setText('/')
         except Exception as e:
             self.loggin.emit(str(e),ERROR)
@@ -204,9 +170,15 @@ class FTPGui(QWidget):
         if not self.ftpm:
             self.in_progress = False
             return
-        self.ftpm.last(base)
+        if self.move.checkedId() == 1:
+            self.ftpm.last(base)
+        else:
+            self.ftpm.last2(base)
         self.loggin.emit('Buscando capítulos', INFORMATION)
-        self.ftpm.find_nexts(self.pathbarftp.text())
+        if self.move.checkedId() == 1:
+            self.ftpm.find_nexts(self.pathbarftp.text())
+        else:
+            self.ftpm.find_nexts2(self.pathbarftp.text())
         r = self.ftpm.results
         for i in r:
             ftpp = join(i[2],i[1])
@@ -246,9 +218,3 @@ class FTPGui(QWidget):
                 return
         self.movethread = Thread(target=self.download)
         self.movethread.start()
-
-        # if self.in_progress:
-        #     self.loggin.emit('Hay un proceso en este momento, espere.', WARNING)
-        #     return
-        # self.in_progress = True
-        # self.download()

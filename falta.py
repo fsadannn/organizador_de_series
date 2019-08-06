@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QTreeWidget, QLineEdit, QButtonGroup
 from PyQt5.QtWidgets import QTreeWidgetItem
 from utils import INFORMATION, WARNING, DEBUG, ERROR
 from utils import parse_serie_guessit as parse
+from utils import rename as parse2
 from utils import video_formats
 from parser_serie import transform
 import fs
@@ -15,6 +16,7 @@ from fs.path import join, splitext, split
 from fs.wrap import read_only
 from fs.errors import DirectoryExpected
 import qtawesome as qta
+from utils import Logger
 
 
 fff = re.compile('')
@@ -25,11 +27,12 @@ def filt(t):
 
 class Falta(QWidget):
 
-    loggin = pyqtSignal(str, int)
+    logginn = pyqtSignal(str, str, int)
 
     def __init__(self):
         super(Falta, self).__init__()
         self.cl = QVBoxLayout()
+        self.loggin = Logger('FaltaGui', self.logginn)
 
         tt = QHBoxLayout()
         self.pathbar = QLineEdit()
@@ -181,6 +184,8 @@ class Falta(QWidget):
                 filee = filee.name
                 try:
                     pp = parse(filee)
+                    if pp.episode and not isinstance(pp.episode, str) and not isinstance(pp.episode, int):
+                        pp = parse2(filee)
                 except Exception as e:
                     self.loggin.emit("Error procesando: "+join(base,fold,filee), WARNING)
                     self.loggin.emit(str(e), ERROR)
@@ -230,6 +235,8 @@ class Falta(QWidget):
                 filee = filee.name
                 try:
                     pp = parse(filee)
+                    if pp.episode and not isinstance(pp.episode, str) and not isinstance(pp.episode, int):
+                        pp = parse2(filee)
                 except Exception as e:
                     self.loggin.emit("Error procesando: "+join(base,fold,filee), WARNING)
                     continue

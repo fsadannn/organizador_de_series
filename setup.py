@@ -23,7 +23,7 @@ executables = [
 ]
 
 setup(name='Organizador',
-      version='4.4',
+      version='4.8.7',
       description='Organizador de Series',
       options=options,
       executables=executables
