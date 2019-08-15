@@ -4,7 +4,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtWidgets import QTextEdit, QDockWidget, QTabWidget
-from PyQt5.QtCore import Qt, QByteArray
+from PyQt5.QtCore import Qt, QByteArray, pyqtSlot
 from PyQt5.QtGui import QPixmap, QIcon
 from move_rename import MoveRename
 from falta import Falta
@@ -47,6 +47,7 @@ class Main(QMainWindow):
         self.cw3.logginn.connect(self.loggin)
         self.cw4.logginn.connect(self.loggin)
 
+    @pyqtSlot(str, str, int)
     def loggin(self, name, txt, level):
         if self.logs.document().lineCount() > 1000:
             self.logs.clear()

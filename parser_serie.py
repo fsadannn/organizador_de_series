@@ -11,7 +11,7 @@ else:
     except:
         MODULE = ""
 
-keep = set(['kun', 'sama'])
+keep = set(['kun', 'sama', 'chan', 'kai'])
 
 tokens = re.compile('[a-zA-Z0-9!ñÑ\']+')
 tv = re.compile('[^a-zA-Z0-9ñÑ][tT][vV][^a-zA-Z0-9ñÑ]')

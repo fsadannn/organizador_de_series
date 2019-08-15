@@ -7,8 +7,7 @@ from parser_serie import transform
 import os
 import re
 import sys
-import time
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFileDialog
 from PyQt5.QtWidgets import QHBoxLayout, QPushButton, QRadioButton
 from PyQt5.QtWidgets import QLineEdit, QButtonGroup
@@ -22,7 +21,7 @@ from threading import Thread
 from fs.path import join, splitext, split, normpath, frombase
 import qtawesome as qta
 from sync import BaseManager
-from utils import Logger
+from utils import Logger, reconnect
 
 
 class FTPManager(BaseManager):
@@ -116,18 +115,22 @@ class FTPGui(QWidget):
         #tt.addWidget(self.configs)
         self.cl.addLayout(tt)
 
-        # tt = QVBoxLayout()
-        # tt2 = QHBoxLayout()
-        # self.progresslabel = QLabel(self)
-        # self.speedlabel = QLabel(self)
-        # tt2.addWidget(self.progresslabel)
-        # tt2.addWidget(self.speedlabel)
-        # self.progress = QProgressBar(self)
-        # self.progress.setMinimum(0)
-        # self.progress.setMaximum(100)
-        # tt.addLayout(tt2)
-        # tt.addWidget(self.progress)
-        # self.cl.addLayout(tt)
+        tt = QVBoxLayout()
+        tt3 = QHBoxLayout()
+        self.namelabel = QLabel(self)
+        tt3.addWidget(self.namelabel)
+        tt2 = QHBoxLayout()
+        self.progresslabel = QLabel(self)
+        self.speedlabel = QLabel(self)
+        tt2.addWidget(self.progresslabel)
+        tt2.addWidget(self.speedlabel)
+        self.progress = QProgressBar(self)
+        self.progress.setMinimum(0)
+        self.progress.setMaximum(100)
+        tt.addLayout(tt3)
+        tt.addLayout(tt2)
+        tt.addWidget(self.progress)
+        self.cl.addLayout(tt)
 
         self.setLayout(self.cl)
         self.pathbtn.clicked.connect(self.set_path)
@@ -135,9 +138,8 @@ class FTPGui(QWidget):
         self.ftpcon.clicked.connect(self.connectar)
         self.ftpm = None
         self.in_progress = False
-        self.time = 0
-        self.movethread = None
 
+    @pyqtSlot()
     def connectar(self):
         try:
             port = int(self.port.text())
@@ -149,7 +151,12 @@ class FTPGui(QWidget):
             self.loggin.emit('ip incorrect', ERROR)
             return
         try:
+            if self.ftpm:
+                self.ftpm.close()
             self.ftpm = FTPManager(ip, self.user.text(), self.passw.text(), port, self.loggin)
+            reconnect(self.ftpm.copier.worker.names, self.change_names)
+            reconnect(self.ftpm.copier.worker.progress, self.update)
+            reconnect(self.ftpm.copier.worker.finish, self.copy_finish)
             self.pathbarftp.setText('/')
         except Exception as e:
             self.loggin.emit(str(e),ERROR)
@@ -190,6 +197,7 @@ class FTPGui(QWidget):
         # print(dirr)
         return dirr
 
+    @pyqtSlot()
     def set_path(self):
         dirr = self.get_path()
         if dirr is None or dirr == '':
@@ -204,6 +212,7 @@ class FTPGui(QWidget):
         if not self.ftpm:
             self.in_progress = False
             return
+        self.in_progress = True
         self.ftpm.last(base)
         self.loggin.emit('Buscando capítulos', INFORMATION)
         self.ftpm.find_nexts(self.pathbarftp.text())
@@ -214,38 +223,33 @@ class FTPGui(QWidget):
             self.ftpm.download(i[2], i[1], base, i[3])
             self.loggin.emit('Descargando '+ i[1]  , INFORMATION)
         self.in_progress = False
-        #self.speedlabel.clear()
-        #self.speedlabel.setText('')
         self.loggin.emit('Descarga finalizada', INFORMATION)
 
-    def update(self, data):
-        if self.time == 0:
-            self.progresslabel.setText(data.src)
-            self.progress.setValue(0)
-            val = int(data.percent)
-            self.progress.setValue(val)
-            val = data.speed/1024
-            self.speedlabel.setText(str(val)+' Kb/s')
-            self.time = time.time()
-        else:
-            tt = time.time()
-            if tt-self.time>2:
-                val = int(data.percent)
-                self.progress.setValue(val)
-                val = data.speed/1024
-                self.speedlabel.setText(str(val)+' Kb/s')
-                self.time = tt
-        if data.finish:
-            data.dst_fs.close()
-            self.time = 0
+    @pyqtSlot(str, str)
+    def change_names(self, src, dst):
+        self.namelabel.setText(src+'    '+dst)
+        self.loggin.emit('Descargando '+src+'  para  '+dst, INFORMATION)
 
+    @pyqtSlot(int, int, float)
+    def update(self, total, count, speed):
+        val = int(count/max(total,1e-12)*100)
+        self.progress.setValue(val)
+        self.speedlabel.setText(str(speed/(1024))+' Kb/s')
+
+
+    @pyqtSlot()
+    def copy_finish(self):
+        self.progress.setValue(0)
+        self.speedlabel.clear()
+        self.namelabel.clear()
+        self.loggin.emit('Descargando de archivo finalizada', INFORMATION)
+
+    @pyqtSlot()
     def procces(self):
-        if self.movethread:
-            if self.movethread.isAlive():
-                self.loggin.emit('Hay un proceso en este momento, espere.', WARNING)
-                return
-        self.movethread = Thread(target=self.download)
-        self.movethread.start()
+        if self.in_progress:
+            self.loggin.emit('Hay un proceso en este momento, espere.', WARNING)
+            return
+        self.download()
 
         # if self.in_progress:
         #     self.loggin.emit('Hay un proceso en este momento, espere.', WARNING)

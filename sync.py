@@ -57,13 +57,13 @@ def make_temp_fs(fff):
                     pth = join('/',fold)
                     if not ram.exists(pth):
                         ram.makedir(fold)
-                    fils.add(fold)
+                    fils.add(pp.title)
                     if pp.episode:
-                        fill = fold+' - '+str(pp.episode)
+                        fill = pp.title+' - '+str(pp.episode)
                     else:
-                        fill = fold
+                        fill = pp.title
                     if pp.episode_title:
-                        fill = fill+' - '+str(pp.episode_title)
+                        fill += ' - '+str(pp.episode_title)
                     fill += pp.ext
                     ram.writetext(join(pth,fill),join(path,j.name))
             except KeyError:
@@ -131,22 +131,20 @@ class BaseManager:
         self.caps_list = {}
         self.results = []
         self.logger = logger
-        self.copier = Copier(num_workers=None)
-        self.copier.start()
+        self.copier = Copier()
 
     def close(self):
-        self.filesystem.close()
         self.copier.stop()
+        self.filesystem.close()
 
     def list_dir(self, top):
         return [i.name for i in self.filesystem.scandir(top) if i.is_dir]
 
-    def download(self, src_pth, src_file , dest_pth, dest_file, call=None):
+    def download(self, src_pth, src_file , dest_pth, dest_file):
 
         ff = fs.open_fs(dest_pth)
         self.copier.copy(self.filesystem, join(src_pth, src_file),
-                        ff, join('/', dest_file),
-                        call, inject_fs=True)
+                        ff, join('/', dest_file))
 
     def find_nexts(self, top='/', deep=0, maxdeep=2):
         if deep==0:

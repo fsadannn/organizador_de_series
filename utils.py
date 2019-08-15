@@ -4,7 +4,7 @@ import sys
 import json
 from guessit import guessit
 from parser_serie import rename_serie
-from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtCore import QObject
 
 class Logger(QObject):
     __slots__ = ('__name', '__signal')
@@ -19,6 +19,17 @@ class Logger(QObject):
     def signal(self):
         return self.__signal
 
+def reconnect(signal, newhandler=None, oldhandler=None):
+    while True:
+        try:
+            if oldhandler is not None:
+                signal.disconnect(oldhandler)
+            else:
+                signal.disconnect()
+        except TypeError:
+            break
+    if newhandler is not None:
+        signal.connect(newhandler)
 
 if hasattr(sys, 'frozen'):
     MODULE = os.path.dirname(sys.executable)
