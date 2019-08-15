@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QFileDialog, QInputDialog, QLineEdit
 from PyQt5.QtWidgets import QGroupBox, QCheckBox, QWidget, QVBoxLayout
 from PyQt5.QtWidgets import QHBoxLayout, QLineEdit, QPushButton
 from PyQt5.QtWidgets import QListWidget, QButtonGroup, QRadioButton
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import QStyle
 from utils import INFORMATION, WARNING, DEBUG, ERROR
 from utils import rename
