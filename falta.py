@@ -1,7 +1,7 @@
 import sys
 import os
 import re
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFileDialog
 from PyQt5.QtWidgets import QHBoxLayout, QPushButton, QRadioButton
 from PyQt5.QtWidgets import QTreeWidget, QLineEdit, QButtonGroup
@@ -101,12 +101,14 @@ class Falta(QWidget):
         # print(dirr)
         return dirr
 
+    @pyqtSlot()
     def set_path(self):
         dirr = self.get_path()
         if dirr is None or dirr == '':
             return
         self.pathbar.setText(dirr)
 
+    @pyqtSlot()
     def procces(self):
         if self.pathbar.text() == '':
             return

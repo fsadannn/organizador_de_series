@@ -46,7 +46,7 @@ DEBUG = 3
 NAME = 4
 
 LOG_COLORS = {INFORMATION: "green", WARNING: "orange", ERROR: "red",
-              DEBUG: "blue", NAME: "yellow"}
+              DEBUG: "blue", NAME: "black"}
 
 
 def logcolor(txt, level):

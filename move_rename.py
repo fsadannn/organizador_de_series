@@ -103,6 +103,7 @@ class MoveRename(QWidget):
         self.build_ui_caps()
         self.allf()
 
+    @pyqtSlot()
     def allf(self):
         li = self.li
         if li.count() == 0:
@@ -115,6 +116,7 @@ class MoveRename(QWidget):
                 txt = item.text().split("\t")
                 cpsm[txt[1]]['state'] = True
 
+    @pyqtSlot()
     def invertf(self):
         li = self.li
         if li.count() == 0:
@@ -175,6 +177,7 @@ class MoveRename(QWidget):
         # print(dirr)
         return dirr
 
+    @pyqtSlot()
     def set_path(self):
         if self.movethread:
             if self.movethread.isAlive():
@@ -244,6 +247,7 @@ class MoveRename(QWidget):
                     name = i['cap']+i['ext']
                 li.addItem(name+"\t"+cps[lic+i]['original'])
 
+    @pyqtSlot()
     def procces(self):
         if self.pathbar.text() == '':
             return
