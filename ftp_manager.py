@@ -153,10 +153,15 @@ class FTPGui(QWidget):
         try:
             if self.ftpm:
                 self.ftpm.close()
+                reconnect(self.ftpm.copier.worker.names)
+                reconnect(self.ftpm.copier.worker.progress)
+                reconnect(self.ftpm.copier.worker.finish)
+                reconnect(self.ftpm.copier.finish)
             self.ftpm = FTPManager(ip, self.user.text(), self.passw.text(), port, self.loggin)
             reconnect(self.ftpm.copier.worker.names, self.change_names)
             reconnect(self.ftpm.copier.worker.progress, self.update)
-            reconnect(self.ftpm.copier.worker.finish, self.copy_finish)
+            reconnect(self.ftpm.copier.worker.finish, self.copy_finish2)
+            reconnect(self.ftpm.copier.finish, self.copy_finish)
             self.pathbarftp.setText('/')
         except Exception as e:
             self.loggin.emit(str(e),ERROR)
@@ -219,11 +224,7 @@ class FTPGui(QWidget):
         r = self.ftpm.results
         for i in r:
             ftpp = join(i[2],i[1])
-            #self.ftpm.download(i[2], i[1], base, i[3], self.update)
             self.ftpm.download(i[2], i[1], base, i[3])
-            self.loggin.emit('Descargando '+ i[1]  , INFORMATION)
-        self.in_progress = False
-        self.loggin.emit('Descarga finalizada', INFORMATION)
 
     @pyqtSlot(str, str)
     def change_names(self, src, dst):
@@ -236,13 +237,18 @@ class FTPGui(QWidget):
         self.progress.setValue(val)
         self.speedlabel.setText(str(speed/(1024))+' Kb/s')
 
+    @pyqtSlot()
+    def copy_finish2(self):
+        self.progress.setValue(100)
+        self.loggin.emit('Descarga de archivo finalizada', INFORMATION)
 
     @pyqtSlot()
     def copy_finish(self):
         self.progress.setValue(0)
         self.speedlabel.clear()
         self.namelabel.clear()
-        self.loggin.emit('Descargando de archivo finalizada', INFORMATION)
+        self.loggin.emit('Descarga finalizada', INFORMATION)
+        self.in_progress = False
 
     @pyqtSlot()
     def procces(self):

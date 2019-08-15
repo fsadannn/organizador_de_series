@@ -1,6 +1,7 @@
 from queue import Queue
 import threading
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread, QObject
+from utils import reconnect
 import time
 
 
@@ -9,6 +10,7 @@ class _CopyTask(QThread):
     names = pyqtSignal(str, str)
     progress = pyqtSignal(int, int, float)
     finish = pyqtSignal()
+    finish2 = pyqtSignal()
     def __init__(self, copier):
         self.copier = copier
         super(_CopyTask, self).__init__()
@@ -43,23 +45,35 @@ class _CopyTask(QThread):
                     self.progress.emit(total, count, speedd)
                 dst_file.close()
                 self.finish.emit()
+                self.emit.finish2()
             except Exception as error:
                 self.copier.add_error(error)
             finally:
                 queue.task_done()
 
 
-class Copier(object):
+class Copier(QObject):
+    finish = pyqtSignal()
     def __init__(self):
+        super(Copier, self).__init__()
         self.queue = Queue()
         self.errors = []
         self.running = True
         self.worker = _CopyTask(self)
+        reconnect(self.worker.finish2, self.watch)
         self.worker.start()
+
+    @pyqtSlot()
+    def watch(self):
+        if self.queue.empty():
+            self.finish.emit()
+
 
     def start(self):
         self.queue = Queue()
+        reconnect(self.worker.finish2)
         self.worker = _CopyTask(self)
+        reconnect(self.worker.finish2, self.watch)
         self.worker.start()
         self.running = True
 
