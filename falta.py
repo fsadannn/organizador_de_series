@@ -70,13 +70,35 @@ class Falta(QWidget):
         self.proc = QPushButton(find,"")
         tt.addWidget(self.proc)
         tt.addStretch()
+        save = qta.icon(
+            'fa5s.save',
+            color='black',
+            color_active='red')
+        self.save = QPushButton(save,"")
+        tt.addWidget(self.save)
         self.cl.addLayout(tt)
+        self.falta_txt = ''
 
         self.setLayout(self.cl)
         self.pathbtn.clicked.connect(self.set_path)
         self.proc.clicked.connect(self.procces)
         self.li.itemExpanded.connect(self.change_open_icon)
         self.li.itemCollapsed.connect(self.change_close_icon)
+        self.move.buttonClicked.connect(self.chnage_option)
+        self.save.clicked.connect(self.save_falta)
+
+    @pyqtSlot()
+    def save_falta(self):
+        if self.pathbar.text() == '':
+            return
+        with open(os.path.join(self.pathbar.text(), 'falta.txt'),'w') as f:
+            f.write(self.falta_txt)
+
+    def chnage_option(self, idd):
+        if self.move.checkedId() == 1:
+            self.save.show()
+        else:
+            self.save.hide()
 
     def change_open_icon(self, item):
         folder = qta.icon(
@@ -122,6 +144,8 @@ class Falta(QWidget):
         li.clear()
         if self.move.checkedId() == 1:
             self.falta_caps()
+            falta_txt = ''
+            falta_set = set()
             caps_list = self.caps_list
             for i in sorted(caps_list.keys()):
                 parent = QTreeWidgetItem()
@@ -133,9 +157,21 @@ class Falta(QWidget):
                     for j in range(len(data)-1):
                         if data[j+1]-data[j] > 1:
                             if data[j+1]-data[j] == 2:
+                                if not(k in falta_set):
+                                    falta_set.add(k)
+                                    falta_txt += '\n' + k + ':  '
+                                    falta_txt += str(data[j]+1)
+                                else:
+                                    falta_txt += ', '+str(data[j]+1)
                                 txt = k + " : " + str(data[j]+1)
                                 addp = True
                             else:
+                                if not(k in falta_set):
+                                    falta_set.add(k)
+                                    falta_txt += '\n' + k + ':  '
+                                    falta_txt += str(data[j]+1) + '-' + str(data[j+1]-1)
+                                else:
+                                    falta_txt += ', '+str(data[j]+1) + '-' + str(data[j+1]-1)
                                 txt = k + " : " + \
                                     str(data[j]+1) + '-' + str(data[j+1]-1)
                                 addp = True
@@ -143,6 +179,7 @@ class Falta(QWidget):
                             child.setIcon(0, video)
                             child.setText(0, txt)
                             parent.addChild(child)
+                self.falta_txt = falta_txt+'\n'
                 #print(i, addp)
                 if addp:
                     li.addTopLevelItem(parent)
