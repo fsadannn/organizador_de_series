@@ -48,6 +48,8 @@ def make_temp_fs(fff):
                 posprocsub.append(j.name)
                 continue
             pp = rename(j.name)
+            if pp.error:
+                pp = parse(j.name)
             try:
                 if pp.is_video:
                     fold = transform(pp.title)
@@ -71,6 +73,8 @@ def make_temp_fs(fff):
 
             for j in posprocsub:
                 pp = rename(j)
+                if pp.error:
+                    pp = parse(j.name)
                 fold = transform(pp.title)
                 pth = join('/',fold)
                 if pp.episode:
@@ -163,6 +167,8 @@ class BaseManager:
         # print(dirs,nondirs)
         for fil in nondirs:
             pp = rename(fil.name)
+            if pp.error:
+                pp = parse(j.name)
             t1 = ''
             t2 = 0
             try:
@@ -230,22 +236,15 @@ class BaseManager:
                 fold = fold.name
                 filee = filee.name
                 try:
-                    pp = parse(filee)
-                    if pp.episode and not isinstance(pp.episode, str) and not isinstance(pp.episode, int):
-                        pp = parse2(filee)
+                    pp = parse2(filee)
+                    if pp.error:
+                        pp = parse(filee)
                 except Exception as e:
                     self.logger.emit("Error procesando: "+join(base,fold,filee), WARNING)
                     self.logger.emit(str(e), ERROR)
                     continue
                 t1 = transform(pp.title)
-                fill = t1
-                if pp.episode:
-                    if pp.season:
-                        fill+= ' - '+str(pp.season)+'x'+str(pp.episode)
-                    else:
-                        fill+= ' - '+str(pp.episode)
-                    fill+=pp.ext
-                else:
+                if not pp.episode:
                     continue
                 t2 = pp.episode
 
@@ -272,7 +271,9 @@ class BaseManager:
                 nondirs.append(name)
         # print(dirs,nondirs)
         for fil in nondirs:
-            pp = rename(fil.name)
+            pp = parse2(fil.name)
+            if pp.error:
+                pp = parse(fil.name)
             t1 = ''
             t2 = 0
             try:
@@ -340,25 +341,17 @@ class BaseManager:
                 fold = fold.name
                 filee = filee.name
                 try:
-                    pp = parse(filee)
-                    if pp.episode and not isinstance(pp.episode, str) and not isinstance(pp.episode, int):
-                        pp = parse2(filee)
+                    pp = parse2(filee)
+                    if pp.error:
+                        pp = parse(filee)
                 except Exception as e:
                     self.logger.emit("Error procesando: "+join(base,fold,filee), WARNING)
                     self.logger.emit(str(e), ERROR)
                     continue
                 t1 = transform(pp.title)
-                fill = t1
-                if pp.episode:
-                    if pp.season:
-                        fill+= ' - '+str(pp.season)+'x'+str(pp.episode)
-                    else:
-                        fill+= ' - '+str(pp.episode)
-                    fill+=pp.ext
-                else:
+                if not pp.episode:
                     continue
                 t2 = pp.episode
-
                 if t1 in folds:
                     folds[t1].add(int(t2))
                 else:

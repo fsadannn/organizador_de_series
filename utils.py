@@ -62,6 +62,15 @@ class CapData:
         self._things = {'title': name, 'episode_title': nameep, 'episode': num,
                         'ext': ext, 'is_video': informats, 'error': err,
                         'mimetype': mimetype, 'season': season}
+        if isinstance(num, str):
+            if 'x' in num:
+                tt = num.split('x')
+                self._things['episode'] = tt[1]
+                self._things['season'] = tt[0]
+            if 'X' in num:
+                tt = num.split('X')
+                self._things['episode'] = tt[1]
+                self._things['season'] = tt[0]
         self._map = {0: name, 1: num, 2: ext, 3: informats, 4: nameep, 5: err}
 
     def __getattr__(self, name):

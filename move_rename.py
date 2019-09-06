@@ -145,7 +145,6 @@ class MoveRename(QWidget):
             cpsm[txt[1]]['state'] = False
 
     def edititem(self, item):
-        cps = self.caps
         cpsm = self.capsmap
         txt = item.text().split("\t")
         text, ok = QInputDialog.getText(None, "Editar",
@@ -162,6 +161,7 @@ class MoveRename(QWidget):
                 self.loggin.emit('Ya existe otro fichero que tiene este posible nombre', ERROR)
                 return
             cpsm[txt[1]]['vpath'] = pth2
+            cpsm[txt[1]]['fixname'] = text
             item.setText(text+'\t'+txt[1])
             item.setCheckState(Qt.Checked)
             cpsm[txt[1]]['state'] = True
@@ -196,7 +196,6 @@ class MoveRename(QWidget):
         with fs.open_fs(dirr) as f:
             data = make_temp_fs(f)
         self.vfs = data
-        caps = []
         capsmap = {}
         vfs = self.vfs
         # vfs.tree()
@@ -210,20 +209,17 @@ class MoveRename(QWidget):
                 opth = vfs.readtext(join(path, nn))
                 oon = split(opth)[1]
                 dd['original'] = oon
-                dd['ext'] = pp.ext
+                dd['ext'] = pp.ext.lower()
                 dd['vpath'] = join(path, nn)
-                dd['state'] = False
+                dd['state'] = True
                 dd['fold'] = split(path)[1]
-                caps.append(dd)
                 capsmap[oon] = dd
-        self.caps = caps
         self.capsmap = capsmap
         nonly = self.move.checkedId() == 3
         li = self.li
-        caps = self.caps
         lic = li.count()
-        cpl = len(caps)
-        cps = caps
+        cps = list(capsmap.values())
+        cpl = len(cps)
         if cpl <= lic:
             for n, i in enumerate(cps):
                 name = i['fixname']
@@ -275,7 +271,7 @@ class MoveRename(QWidget):
     def _movef(self, path):
         ram = self.vfs
         with fs.open_fs(path) as ff:
-            for data in self.caps:
+            for data in self.capsmap.values():
                 if not data['state']:
                     continue
                 fold = data['fold']
@@ -295,7 +291,7 @@ class MoveRename(QWidget):
 
     def _renamef(self, path):
         with fs.open_fs(path) as ff:
-            for data in self.caps:
+            for data in self.capsmap.values():
                 if not data['state']:
                     continue
                 if data['fixname'] == data['original']:
@@ -305,7 +301,7 @@ class MoveRename(QWidget):
                 opth = join(path, data['original'])
                 self.loggin.emit("Renombrando: "+data['original']+' a '+data['fixname'], INFORMATION)
                 try:
-                    ff.move(opth, path2)
+                    ff.move(opth, path2, overwrite=True)
                 except Exception as e:
                     self.loggin.emit("Error en archivo: "+split(opth)[1]+'<br>'+str(e), ERROR)
         self.loggin.emit("Renombrar finalizado.", DEBUG)

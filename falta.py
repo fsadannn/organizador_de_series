@@ -175,7 +175,7 @@ class Falta(QWidget):
                 path = join('/', i.name)
                 try:
                     for j in ff.scandir(path):
-                        if j.is_file and splitext(j.name)[1] in video_formats:
+                        if j.is_file and splitext(j.name)[1].lower() in video_formats:
                             proces.append((j, i))
                 except (PermissionError, DirectoryExpected) as e:
                     self.loggin.emit("Acceso denegado a"+join(base,i.name), ERROR)
@@ -184,23 +184,18 @@ class Falta(QWidget):
             for filee, fold in proces:
                 fold = fold.name
                 filee = filee.name
+                self.loggin.emit("Procesando: "+join(base,fold), INFORMATION)
                 try:
-                    pp = parse(filee)
-                    if pp.episode and not isinstance(pp.episode, str) and not isinstance(pp.episode, int):
-                        pp = parse2(filee)
+                    pp = parse2(filee)
+                    if pp.error:
+                        pp = parse(filee)
                 except Exception as e:
                     self.loggin.emit("Error procesando: "+join(base,fold,filee), WARNING)
-                    self.loggin.emit(str(e), ERROR)
+                    self.loggin.emit(e, ERROR)
                     continue
                 t1 = transform(pp.title)
                 fill = t1
-                if pp.episode:
-                    if pp.season:
-                        fill+= ' - '+str(pp.season)+'x'+str(pp.episode)
-                    else:
-                        fill+= ' - '+str(pp.episode)
-                    fill+=pp.ext
-                else:
+                if not pp.episode:
                     continue
                 t2 = pp.episode
                 if fold in folds:
@@ -226,7 +221,7 @@ class Falta(QWidget):
                 path = join('/', i.name)
                 try:
                     for j in ff.scandir(path):
-                        if j.is_file and splitext(j.name)[1] in video_formats:
+                        if j.is_file and splitext(j.name)[1].lower() in video_formats:
                             proces.append((j, i))
                 except (PermissionError, DirectoryExpected) as e:
                     self.loggin.emit("Acceso denegado a"+join(base,i.name), ERROR)
@@ -235,22 +230,18 @@ class Falta(QWidget):
             for filee, fold in proces:
                 fold = fold.name
                 filee = filee.name
+                self.loggin.emit("Procesando: "+join(base,fold), INFORMATION)
                 try:
-                    pp = parse(filee)
-                    if pp.episode and not isinstance(pp.episode, str) and not isinstance(pp.episode, int):
-                        pp = parse2(filee)
+                    pp = parse2(filee)
+                    if pp.error:
+                        pp = parse(filee)
                 except Exception as e:
                     self.loggin.emit("Error procesando: "+join(base,fold,filee), WARNING)
+                    self.loggin.emit(e, ERROR)
                     continue
                 t1 = transform(pp.title)
                 fill = t1
-                if pp.episode:
-                    if pp.season:
-                        fill+= ' - '+str(pp.season)+'x'+str(pp.episode)
-                    else:
-                        fill+= ' - '+str(pp.episode)
-                    fill+=pp.ext
-                else:
+                if not pp.episode:
                     continue
                 t2 = pp.episode
                 if fold in folds:
