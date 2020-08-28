@@ -32,6 +32,15 @@ ordinal = re.compile('1st|2nd|3rd|[1-9][0-9?]th|1ro|2do|3ro|[4-6]to|7mo|8vo|9no'
 upperm = re.compile('[A-Z].*[A-Z]')
 letn = re.compile('[0-9][a-z]',re.I)
 
+def is_valid_year(txt):
+    txt=txt.strip()
+    try:
+        data = int(txt)
+        if  1920 <= data <= 2030:
+            return True
+        return False
+    except:
+        return False
 
 def transform(txt):
     res = []
@@ -169,17 +178,29 @@ def process(toks, seps, data={}, deep=0, nep = True):
             data['cap'] = ''
             data['pos'] = -1
         elif len(capcandidate) == 1:
-            ff = captemp.search(capcandidate[0][0])
-            data['cap'] = ff.group()
-            data['pos'] = capcandidate[0][2]
+            if is_valid_year(capcandidate[0][0]):
+                data['cap'] = ''
+                data['pos'] = -1
+            else:
+                ff = captemp.search(capcandidate[0][0])
+                data['cap'] = ff.group()
+                data['pos'] = capcandidate[0][2]
         elif len(list(filter(lambda x: x[1] == 0, capcandidate))) == 1:
-            ff = captemp.search(capcandidate[0][0])
-            data['cap'] = ff.group()
-            data['pos'] = capcandidate[0][2]
+            if is_valid_year(capcandidate[0][0]):
+                data['cap'] = ''
+                data['pos'] = -1
+            else:
+                ff = captemp.search(capcandidate[0][0])
+                data['cap'] = ff.group()
+                data['pos'] = capcandidate[0][2]
         else:
-            ff = captemp.search(capcandidate[0][0])
-            data['cap'] = ff.group()
-            data['pos'] = capcandidate[0][2]
+            if is_valid_year(capcandidate[0][0]):
+                data['cap'] = ''
+                data['pos'] = -1
+            else:
+                ff = captemp.search(capcandidate[0][0])
+                data['cap'] = ff.group()
+                data['pos'] = capcandidate[0][2]
     if deep == 0:
         if not('pos' in data):
             data['pos']=len(name['toks'])+10

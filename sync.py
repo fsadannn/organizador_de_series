@@ -239,7 +239,11 @@ class BaseManager:
                     if folds[t1] < int(t2):
                         folds[t1]=int(t2)
                 else:
-                    folds[t1] = int(t2)
+                    tt = best_ed(t1,folds.keys())
+                    if tt in folds:
+                        if folds[tt] < int(t2):
+                            folds[tt]=int(t2)
+                    folds[tt] = int(t2)
             self.caps_list = folds
 
     def find_nexts2(self, top='/', deep=0, maxdeep=2):
@@ -342,8 +346,12 @@ class BaseManager:
                 if t1 in folds:
                     folds[t1].add(int(t2))
                 else:
-                    folds[t1] = set()
-                    folds[t1].add(int(t2))
+                    tt = best_ed(t1, folds.keys())
+                    if tt in folds:
+                        folds[t1].add(int(t2))
+                    else:
+                        folds[t1] = set()
+                        folds[t1].add(int(t2))
             self.caps_list = folds
 
     def __enter__(self):

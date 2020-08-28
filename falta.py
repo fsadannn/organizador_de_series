@@ -244,7 +244,8 @@ class Falta(QWidget):
                         if tt in folds[fold]:
                             if folds[fold][tt] < int(t2):
                                 folds[fold][tt]=int(t2)
-                        folds[fold][tt] = int(t2)
+                        else:
+                            folds[fold][tt] = int(t2)
                 else:
                     folds[fold] = {}
                     folds[fold][t1] = int(t2)
@@ -286,11 +287,19 @@ class Falta(QWidget):
                 t2 = pp.episode
                 if fold in folds:
                     if t1 in folds[fold]:
-                        folds[fold][t1].append(int(t2))
+                        folds[fold][t1].add(int(t2))
                     else:
                         tt = best_ed(t1, folds[fold].keys(), gap=2)
-                        folds[fold][tt] = [int(t2)]
+                        if tt in folds[fold]:
+                            folds[fold][tt].add(int(t2))
+                        else:
+                            folds[fold][tt] = set()
+                            folds[fold][tt].add(int(t2))
                 else:
                     folds[fold] = {}
-                    folds[fold][t1] = [int(t2)]
+                    folds[fold][t1] = set()
+                    folds[fold][t1].add(int(t2))
+            # for i in folds.keys():
+            #     for j in folds[i]:
+            #         folds[i][j]=list(set(folds[i][j]))
             self.caps_list = folds
