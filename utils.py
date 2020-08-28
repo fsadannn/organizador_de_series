@@ -138,16 +138,32 @@ def editDistance(a, b, lower=False):
                 if a[j-1] == b[i-1]:
                     m[i][j] = m[i-1][j-1]
                 else:
+                    cte=1
+                    if not a[j-1].isalnum():
+                        cte=0.5
                     m[i][j] = min(
-                        m[i-1][j-1]+1, min(m[i][j-1]+1, m[i-1][j]+1))
+                        m[i-1][j-1]+cte, min(m[i][j-1]+1, m[i-1][j]+cte))
         ret = m[len(b)][len(a)]
         return ret
 
+def best_ed(name, sett, gap=2):
+    near = ''
+    bedd = 100
+    for j in sett:
+        edd = editDistance(name, j, True)
+        if edd <= gap and edd < bedd:
+            near = j
+            bedd = edd
+            if edd == 0:
+                break
+    if near == '':
+        return name
+    return near
 
 def parse_serie_guessit(title, params=None):
     if not params:
         params = '--json --no-default-config -E -t episode -c \"'+os.path.join(MODULE,'options.json\"')
-    txt, ext = os.path.splitext(title)
+    _, ext = os.path.splitext(title)
     ext = ext.lower()
     a = guessit(title, params)
     titlee = a['title']
@@ -182,7 +198,9 @@ def rename(name):
     ext = ext.lower()
     try:
         t1, t2, t3 = rename_serie(txt)
-    except (ValueError, IndexError):
+    except (ValueError, IndexError) as e:
+        print(e)
+        print('Error with anime parser, using fallback parser.')
         try:
             rr = parse_serie_guessit(name)
             ep = ''
@@ -197,7 +215,7 @@ def rename(name):
             return CapData(rr['title'], ept, ep, ext, bool(ext in video_formats), err)
         except:
             return CapData(txt, '', '', ext, bool(ext in video_formats), True)
-    data = {''}
+    # data = {''}
     return CapData(t1, t3, t2, ext, bool(ext in video_formats), err)
 
 

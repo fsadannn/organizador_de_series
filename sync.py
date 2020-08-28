@@ -1,6 +1,6 @@
 from fs.memoryfs import MemoryFS
 from fs.path import join, splitext, split, normpath, frombase
-from utils import rename, editDistance
+from utils import rename, editDistance, best_ed
 from utils import parse_serie_guessit as parse
 from utils import rename as parse2
 from utils import INFORMATION, WARNING, DEBUG, ERROR
@@ -14,19 +14,6 @@ import fs
 import re
 from copier import Copier
 
-def best_ed(name, sett, gap=2):
-    near = ''
-    bedd = 100
-    for j in sett:
-        edd = editDistance(name, j, True)
-        if edd <= gap and edd < bedd:
-            near = j
-            bedd = edd
-            if edd == 0:
-                break
-    if near == '':
-        return name
-    return near
 
 def make_temp_fs(fff):
         # make virtual filesystem in ram with the final
@@ -93,7 +80,7 @@ def make_temp_fs(fff):
                     best = None
                     gap = 3
                     for i in fils:
-                        n = editDistance(i,foldd)
+                        n = editDistance(i,fold)
                         if n < 3 and n < gap:
                             best=i
                             gap=n
@@ -188,7 +175,7 @@ class BaseManager:
                     continue
             except KeyError:
                 if self.logger:
-                    self.logger.emit("Error procesando: "+i, WARNING)
+                    self.logger.emit("Error procesando: "+fil.name, WARNING)
                 continue
             bedd = 100
             gap=2
@@ -293,7 +280,7 @@ class BaseManager:
                     continue
             except KeyError:
                 if self.logger:
-                    self.logger.emit("Error procesando: "+i, WARNING)
+                    self.logger.emit("Error procesando: "+fil.name, WARNING)
                 continue
             bedd = 100
             gap=2

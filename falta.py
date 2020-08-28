@@ -16,7 +16,7 @@ from fs.path import join, splitext, split
 from fs.wrap import read_only
 from fs.errors import DirectoryExpected
 import qtawesome as qta
-from utils import Logger
+from utils import Logger, best_ed
 
 
 fff = re.compile('')
@@ -231,7 +231,7 @@ class Falta(QWidget):
                     self.loggin.emit(e, ERROR)
                     continue
                 t1 = transform(pp.title)
-                fill = t1
+                # fill = t1
                 if not pp.episode:
                     continue
                 t2 = pp.episode
@@ -240,7 +240,11 @@ class Falta(QWidget):
                         if folds[fold][t1] < int(t2):
                             folds[fold][t1]=int(t2)
                     else:
-                        folds[fold][t1] = int(t2)
+                        tt = best_ed(t1, folds[fold].keys(), gap=2)
+                        if tt in folds[fold]:
+                            if folds[fold][tt] < int(t2):
+                                folds[fold][tt]=int(t2)
+                        folds[fold][tt] = int(t2)
                 else:
                     folds[fold] = {}
                     folds[fold][t1] = int(t2)
@@ -277,7 +281,6 @@ class Falta(QWidget):
                     self.loggin.emit(e, ERROR)
                     continue
                 t1 = transform(pp.title)
-                fill = t1
                 if not pp.episode:
                     continue
                 t2 = pp.episode
@@ -285,7 +288,8 @@ class Falta(QWidget):
                     if t1 in folds[fold]:
                         folds[fold][t1].append(int(t2))
                     else:
-                        folds[fold][t1] = [int(t2)]
+                        tt = best_ed(t1, folds[fold].keys(), gap=2)
+                        folds[fold][tt] = [int(t2)]
                 else:
                     folds[fold] = {}
                     folds[fold][t1] = [int(t2)]

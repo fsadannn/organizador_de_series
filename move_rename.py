@@ -199,7 +199,7 @@ class MoveRename(QWidget):
         capsmap = {}
         vfs = self.vfs
         # vfs.tree()
-        for path, dirs, files in vfs.walk():
+        for path, _, files in vfs.walk():
             for i in files:
                 dd = {}
                 nn = i.name
@@ -269,7 +269,7 @@ class MoveRename(QWidget):
         self.movethread.start()
 
     def _movef(self, path):
-        ram = self.vfs
+        # ram = self.vfs
         with fs.open_fs(path) as ff:
             for data in self.capsmap.values():
                 if not data['state']:

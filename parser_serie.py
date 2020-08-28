@@ -19,17 +19,16 @@ normsp = re.compile('  +')
 daysstr = ['lunes', 'martes', 'mi[eé]rcoles', 'jueves', 'viernes', 's[áa]bado', 'domingo',
            'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 days = re.compile('|'.join(daysstr), re.I)
-dates = re.compile(
-    '[0-9]{1,2}[/-][0-9]{1,2}[/-][0-9]{2,4}|[0-9]{2,4}[/-][0-9]{1,2}[/-][0-9]{1,2}')
-epi = re.compile('episodios?$|cap[ií]tulos?$|caps?$', re.I)
-epin = re.compile('episodios?[0-9]+|cap[ií]tulos?[0-9]+|caps?[0-9]+', re.I)
+dates = re.compile('[0-9]{1,2}[/-][0-9]{1,2}[/-][0-9]{2,4}|[0-9]{2,4}[/-][0-9]{1,2}[/-][0-9]{1,2}')
+epi = re.compile('chapters?$|episodes?$|episodios?$|cap[ií]tulos?$|caps?$', re.I)
+epin = re.compile('chapters? *?[0-9]+|episodes? *?[0-9]+|episodios? *?[0-9]+|cap[ií]tulos? *?[0-9]+|caps? *?[0-9]+', re.I)
 garbage = re.compile('\{ *\}|\( *\)|\[ *\]')
 groupsop = re.compile('|'.join(['\{', '\(', '\[']))
 groupscl = re.compile('|'.join(['\}', '\)', '\]']))
 clopgp = re.compile('|'.join(['\]\[', '\}\{', '\)\(']))
-resolution = re.compile('1080p|720p|480p|1920 *[xX] *1080|1280 *[xX] *720|720 *[xX] *480')
-captemp = re.compile('[0-9]{1,4}x?[0-9]{0,4}', re.I)
-ordinal = re.compile('1st|2nd|3rd|[1-9][0-9?]th|1ro|2do|3ro|[4-6]to|7mo|8vo|9no')
+resolution = re.compile('1080p|720p|480p|1920 *?[xX] *?1080|1280 *?[xX] *?720|720 *?[xX] *?480')
+captemp = re.compile('[0-9]{1,4}[xX]?[0-9]{0,4}', re.I)
+ordinal = re.compile('1st|2nd|3rd|[1-9][0-9?]th|1ro|2do|3ro|[4-6]to|7mo|8vo|9no', re.I)
 upperm = re.compile('[A-Z].*[A-Z]')
 letn = re.compile('[0-9][a-z]',re.I)
 
@@ -41,10 +40,12 @@ def transform(txt):
             res.append(i.lower())
         elif i == " ":
             continue
-        elif len(i) < 3 and letn.search(i):
+        elif len(i) == 2 and letn.search(i) and not ordinal.search(i):
             res.append(i[0]+i[1].upper())
         elif len(i) < 3 or upperm.search(i):
             res.append(i)
+        elif len(i) == 1:
+            res.append(i.lower())
         else:
             res.append(i[0].upper()+i[1:].lower())
     return ' '.join(res).strip()
@@ -69,12 +70,12 @@ def parse(txt):
         toks.append(i.group())
     seps = []
     for i in tokens.split(txt):
-       if len(i) > 1 and clopgp.match(i.strip()):
+        if len(i) > 1 and clopgp.match(i.strip()):
            i = i.strip()
            seps.append(i[0])
            toks.insert(len(seps)-1, '')
            seps.append(i[1])
-       else:
+        else:
            seps.append(i)
     if len(seps) == 0:
         return toks, ['']

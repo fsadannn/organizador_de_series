@@ -223,7 +223,7 @@ class FTPGui(QWidget):
         self.ftpm.find_nexts(self.pathbarftp.text())
         r = self.ftpm.results
         for i in r:
-            ftpp = join(i[2],i[1])
+            # ftpp = join(i[2],i[1])
             self.ftpm.download(i[2], i[1], base, i[3])
 
     @pyqtSlot(str, str)
