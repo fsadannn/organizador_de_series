@@ -12,6 +12,7 @@ from utils import rename as parse2
 from utils import video_formats
 from parser_serie import transform
 import fs
+from fs.osfs import OSFS
 from fs.path import join, splitext
 from fs.wrap import read_only
 from fs.errors import DirectoryExpected
@@ -208,7 +209,7 @@ class Falta(QWidget):
 
     def last(self):
         base = self.pathbar.text()
-        with read_only(fs.open_fs(base)) as ff:
+        with read_only(OSFS(base)) as ff:
             proces = []
             folds = []
             for i in ff.scandir('/'):
@@ -262,7 +263,7 @@ class Falta(QWidget):
 
     def falta_caps(self):
         base = self.pathbar.text()
-        with read_only(fs.open_fs(base)) as ff:
+        with read_only(OSFS(base)) as ff:
             proces = []
             folds = []
             for i in ff.scandir('/'):

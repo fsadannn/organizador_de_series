@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 # !/usr/bin python3
 # @author: SadanNN
+from os import waitpid
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtWidgets import QTextEdit, QDockWidget, QTabWidget

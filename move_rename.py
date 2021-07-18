@@ -10,6 +10,7 @@ from utils import INFORMATION, WARNING, DEBUG, ERROR
 from utils import rename
 from sync import make_temp_fs
 import fs
+from fs.osfs import OSFS
 from fs.path import join, split
 import qtawesome as qta
 from utils import Logger
@@ -194,7 +195,7 @@ class MoveRename(QWidget):
 
     def build_ui_caps(self):
         dirr = self.dirr
-        with fs.open_fs(dirr) as f:
+        with OSFS(dirr) as f:
             data = make_temp_fs(f)
         self.vfs = data
         capsmap = {}
@@ -274,7 +275,7 @@ class MoveRename(QWidget):
 
     def _movef(self, path):
         # ram = self.vfs
-        with fs.open_fs(path) as ff:
+        with OSFS(path) as ff:
             for data in self.capsmap.values():
                 if not data['state']:
                     continue
@@ -296,7 +297,7 @@ class MoveRename(QWidget):
         self.allf()
 
     def _renamef(self, path):
-        with fs.open_fs(path) as ff:
+        with OSFS(path) as ff:
             for data in self.capsmap.values():
                 if not data['state']:
                     continue

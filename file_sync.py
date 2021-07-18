@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QListWidget, QListWidgetItem
 from PyQt5.QtWidgets import QLabel, QProgressBar
 import fs
 from fs.path import join, normpath
+from fs.osfs import OSFS
 import qtawesome as qta
 from sync import BaseManager
 from utils import Logger
@@ -17,7 +18,7 @@ from utils import Logger
 class FileManager(BaseManager):
 
     def __init__(self, path, logger=None):
-        self.file = fs.open_fs(path)
+        self.file = OSFS(path)
         super(FileManager, self).__init__(self.file, logger)
 
 

@@ -10,6 +10,7 @@ from parser_serie import transform
 from fs.wrap import read_only, cache_directory
 from fs.errors import DirectoryExpected
 import fs
+from fs.osfs import OSFS
 import re
 from copier import Copier
 
@@ -142,7 +143,7 @@ class BaseManager:
 
     def download(self, src_pth, src_file, dest_pth, dest_file):
 
-        ff = fs.open_fs(dest_pth)
+        ff = OSFS(dest_pth)
         self.copier.copy(self.filesystem, join(src_pth, src_file),
                          ff, join('/', dest_file))
 
@@ -214,7 +215,7 @@ class BaseManager:
                 self.find_nexts(path, deep + 1, maxdeep)
 
     def last(self, base):
-        with read_only(fs.open_fs(base)) as ff:
+        with read_only(OSFS(base)) as ff:
             proces = []
             folds = []
             for i in ff.scandir('/'):
@@ -327,7 +328,7 @@ class BaseManager:
                 self.find_nexts2(path, deep + 1, maxdeep)
 
     def last2(self, base):
-        with read_only(fs.open_fs(base)) as ff:
+        with read_only(OSFS(base)) as ff:
             proces = []
             folds = []
             for i in ff.scandir('/'):
