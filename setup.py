@@ -9,9 +9,9 @@ if sys.platform == 'win32':
 options = {
     'build_exe': {
         'includes': ['atexit', 'utils', 'move_rename', 'falta', 'appicon',
-                      'stopwords', 'parser_serie', 'sync'],
+                     'stopwords', 'parser_serie', 'sync'],
         'include_files': ['options.json'],
-        'packages': ['pkginfo', 'pkg_resources','babelfish', 'queue'],
+        'packages': ['pkginfo', 'pkg_resources', 'babelfish', 'queue'],
         'include_msvcr': True,
         'optimize': 2
     }
@@ -19,11 +19,11 @@ options = {
 
 executables = [
     Executable('main_ui.py', base=base,
-               targetName='Organizador de Series.exe', icon='icon.ico')
+               target_name='Organizador de Series.exe', icon='icon.ico')
 ]
 
 setup(name='Organizador',
-      version='4.10.4',
+      version='4.12.0',
       description='Organizador de Series',
       options=options,
       executables=executables

@@ -12,7 +12,7 @@ from utils import rename as parse2
 from utils import video_formats
 from parser_serie import transform
 import fs
-from fs.path import join, splitext, split
+from fs.path import join, splitext
 from fs.wrap import read_only
 from fs.errors import DirectoryExpected
 import qtawesome as qta
@@ -20,6 +20,8 @@ from utils import Logger, best_ed
 
 
 fff = re.compile('')
+
+
 def filt(t):
     pass
     # funcion para capitulos en el formato temp[xX]caps
@@ -40,7 +42,7 @@ class Falta(QWidget):
             'fa5s.folder-open',
             color='orange',
             color_active='red')
-        self.pathbtn = QPushButton(folder,'')
+        self.pathbtn = QPushButton(folder, '')
         tt.addWidget(self.pathbar)
         tt.addWidget(self.pathbtn)
         self.cl.addLayout(tt)
@@ -67,14 +69,14 @@ class Falta(QWidget):
             'fa5s.search',
             color='orange',
             color_active='red')
-        self.proc = QPushButton(find,"")
+        self.proc = QPushButton(find, "")
         tt.addWidget(self.proc)
         tt.addStretch()
         save = qta.icon(
             'fa5s.save',
             color='black',
             color_active='red')
-        self.save = QPushButton(save,"")
+        self.save = QPushButton(save, "")
         tt.addWidget(self.save)
         self.cl.addLayout(tt)
         self.falta_txt = ''
@@ -91,7 +93,7 @@ class Falta(QWidget):
     def save_falta(self):
         if self.pathbar.text() == '':
             return
-        with open(os.path.join(self.pathbar.text(), 'falta.txt'),'w') as f:
+        with open(os.path.join(self.pathbar.text(), 'falta.txt'), 'w') as f:
             f.write(self.falta_txt)
 
     def chnage_option(self, idd):
@@ -153,33 +155,37 @@ class Falta(QWidget):
                 parent.setText(0, i)
                 addp = False
                 for k in sorted(caps_list[i].keys()):
-                    data = [0]+list(sorted(caps_list[i][k]))
-                    for j in range(len(data)-1):
-                        if data[j+1]-data[j] > 1:
-                            if data[j+1]-data[j] == 2:
+                    data = [0] + list(sorted(caps_list[i][k]))
+                    for j in range(len(data) - 1):
+                        if data[j + 1] - data[j] > 1:
+                            if data[j + 1] - data[j] == 2:
                                 if not(k in falta_set):
                                     falta_set.add(k)
                                     falta_txt += '\n' + k + ':  '
-                                    falta_txt += str(data[j]+1)
+                                    falta_txt += str(data[j] + 1)
                                 else:
-                                    falta_txt += ', '+str(data[j]+1)
-                                txt = k + " : " + str(data[j]+1)
+                                    falta_txt += ', ' + str(data[j] + 1)
+                                txt = k + " : " + str(data[j] + 1)
                                 addp = True
                             else:
                                 if not(k in falta_set):
                                     falta_set.add(k)
                                     falta_txt += '\n' + k + ':  '
-                                    falta_txt += str(data[j]+1) + '-' + str(data[j+1]-1)
+                                    falta_txt += str(data[j] + 1) + \
+                                        '-' + str(data[j + 1] - 1)
                                 else:
-                                    falta_txt += ', '+str(data[j]+1) + '-' + str(data[j+1]-1)
+                                    falta_txt += ', ' + \
+                                        str(data[j] + 1) + '-' + \
+                                        str(data[j + 1] - 1)
                                 txt = k + " : " + \
-                                    str(data[j]+1) + '-' + str(data[j+1]-1)
+                                    str(data[j] + 1) + '-' + \
+                                    str(data[j + 1] - 1)
                                 addp = True
                             child = QTreeWidgetItem(parent)
                             child.setIcon(0, video)
                             child.setText(0, txt)
                             parent.addChild(child)
-                self.falta_txt = falta_txt+'\n'
+                self.falta_txt = falta_txt + '\n'
                 #print(i, addp)
                 if addp:
                     li.addTopLevelItem(parent)
@@ -195,7 +201,7 @@ class Falta(QWidget):
                 for k in sorted(caps_list[i].keys()):
                     txt = k + " - " + str(caps_list[i][k])
                     child = QTreeWidgetItem(parent)
-                    child.setIcon(0,video)
+                    child.setIcon(0, video)
                     child.setText(0, txt)
                     parent.addChild(child)
                 li.addTopLevelItem(parent)
@@ -215,19 +221,22 @@ class Falta(QWidget):
                         if j.is_file and splitext(j.name)[1].lower() in video_formats:
                             proces.append((j, i))
                 except (PermissionError, DirectoryExpected) as e:
-                    self.loggin.emit("Acceso denegado a"+join(base,i.name), ERROR)
+                    self.loggin.emit("Acceso denegado a" +
+                                     join(base, i.name), ERROR)
 
             folds = {}
             for filee, fold in proces:
                 fold = fold.name
                 filee = filee.name
-                self.loggin.emit("Procesando: "+join(base,fold), INFORMATION)
+                self.loggin.emit("Procesando: " +
+                                 join(base, fold), INFORMATION)
                 try:
                     pp = parse2(filee)
                     if pp.error:
                         pp = parse(filee)
                 except Exception as e:
-                    self.loggin.emit("Error procesando: "+join(base,fold,filee), WARNING)
+                    self.loggin.emit("Error procesando: " +
+                                     join(base, fold, filee), WARNING)
                     self.loggin.emit(e, ERROR)
                     continue
                 t1 = transform(pp.title)
@@ -238,12 +247,12 @@ class Falta(QWidget):
                 if fold in folds:
                     if t1 in folds[fold]:
                         if folds[fold][t1] < int(t2):
-                            folds[fold][t1]=int(t2)
+                            folds[fold][t1] = int(t2)
                     else:
                         tt = best_ed(t1, folds[fold].keys(), gap=2)
                         if tt in folds[fold]:
                             if folds[fold][tt] < int(t2):
-                                folds[fold][tt]=int(t2)
+                                folds[fold][tt] = int(t2)
                         else:
                             folds[fold][tt] = int(t2)
                 else:
@@ -266,19 +275,22 @@ class Falta(QWidget):
                         if j.is_file and splitext(j.name)[1].lower() in video_formats:
                             proces.append((j, i))
                 except (PermissionError, DirectoryExpected) as e:
-                    self.loggin.emit("Acceso denegado a"+join(base,i.name), ERROR)
+                    self.loggin.emit("Acceso denegado a" +
+                                     join(base, i.name), ERROR)
 
             folds = {}
             for filee, fold in proces:
                 fold = fold.name
                 filee = filee.name
-                self.loggin.emit("Procesando: "+join(base,fold), INFORMATION)
+                self.loggin.emit("Procesando: " +
+                                 join(base, fold), INFORMATION)
                 try:
                     pp = parse2(filee)
                     if pp.error:
                         pp = parse(filee)
                 except Exception as e:
-                    self.loggin.emit("Error procesando: "+join(base,fold,filee), WARNING)
+                    self.loggin.emit("Error procesando: " +
+                                     join(base, fold, filee), WARNING)
                     self.loggin.emit(e, ERROR)
                     continue
                 t1 = transform(pp.title)

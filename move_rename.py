@@ -1,18 +1,16 @@
 import sys
 import os
-import shutil as sh
 from threading import Thread
 from PyQt5.QtWidgets import QFileDialog, QInputDialog, QLineEdit
-from PyQt5.QtWidgets import QGroupBox, QCheckBox, QWidget, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from PyQt5.QtWidgets import QHBoxLayout, QLineEdit, QPushButton
 from PyQt5.QtWidgets import QListWidget, QButtonGroup, QRadioButton
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QStyle
 from utils import INFORMATION, WARNING, DEBUG, ERROR
 from utils import rename
 from sync import make_temp_fs
 import fs
-from fs.path import join, splitext, split
+from fs.path import join, split
 import qtawesome as qta
 from utils import Logger
 
@@ -24,6 +22,7 @@ else:
         MODULE = os.path.dirname(os.path.realpath(__file__))
     except:
         MODULE = ""
+
 
 class MoveRename(QWidget):
 
@@ -40,7 +39,7 @@ class MoveRename(QWidget):
             'fa5s.folder-open',
             color='orange',
             color_active='red')
-        self.pathbtn = QPushButton(folder,'')
+        self.pathbtn = QPushButton(folder, '')
         tt.addWidget(self.pathbar)
         tt.addWidget(self.pathbtn)
         self.cl.addLayout(tt)
@@ -50,12 +49,12 @@ class MoveRename(QWidget):
             'mdi.select-all',
             color='blue',
             color_active='red')
-        self.all = QPushButton(selall,'')
+        self.all = QPushButton(selall, '')
         selinv = qta.icon(
             'mdi.select-inverse',
             color='blue',
             color_active='red')
-        self.invert = QPushButton(selinv,"")
+        self.invert = QPushButton(selinv, "")
         self.move = QButtonGroup()
         tt1 = QRadioButton("Mover")
         tt1.setChecked(True)
@@ -82,7 +81,7 @@ class MoveRename(QWidget):
             'mdi.play',
             color='green',
             color_active='red')
-        self.proc = QPushButton(procc,"")
+        self.proc = QPushButton(procc, "")
         tt.addWidget(self.proc)
         tt.addStretch()
         self.cl.addLayout(tt)
@@ -150,7 +149,7 @@ class MoveRename(QWidget):
         text, ok = QInputDialog.getText(None, "Editar",
                                         "Nombre:", QLineEdit.Normal,
                                         txt[0])
-        if ok and text!='' and not(text is None):
+        if ok and text != '' and not(text is None):
             if text == txt[0]:
                 return
             pth = cpsm[txt[1]]['vpath']
@@ -158,11 +157,12 @@ class MoveRename(QWidget):
             try:
                 self.vfs.move(pth, pth2)
             except fs.errors.DestinationExists:
-                self.loggin.emit('Ya existe otro fichero que tiene este posible nombre', ERROR)
+                self.loggin.emit(
+                    'Ya existe otro fichero que tiene este posible nombre', ERROR)
                 return
             cpsm[txt[1]]['vpath'] = pth2
             cpsm[txt[1]]['fixname'] = text
-            item.setText(text+'\t'+txt[1])
+            item.setText(text + '\t' + txt[1])
             item.setCheckState(Qt.Checked)
             cpsm[txt[1]]['state'] = True
 
@@ -171,9 +171,9 @@ class MoveRename(QWidget):
         if txt is None or txt == "":
             txt = ""
         dirr = QFileDialog.getExistingDirectory(self, "Selecionar Directorio",
-                                                 txt,
-                                                 QFileDialog.ShowDirsOnly
-                                                 | QFileDialog.DontResolveSymlinks)
+                                                txt,
+                                                QFileDialog.ShowDirsOnly
+                                                | QFileDialog.DontResolveSymlinks)
         # print(dirr)
         return dirr
 
@@ -181,7 +181,8 @@ class MoveRename(QWidget):
     def set_path(self):
         if self.movethread:
             if self.movethread.isAlive():
-                self.loggin.emit('Hay un proceso en este momento, espere.', WARNING)
+                self.loggin.emit(
+                    'Hay un proceso en este momento, espere.', WARNING)
                 return
         dirr = self.get_path()
         if dirr is None or dirr == '':
@@ -203,10 +204,11 @@ class MoveRename(QWidget):
             for i in files:
                 dd = {}
                 nn = i.name
-                pp  = rename(nn)
+                pp = rename(nn)
                 dd['fixname'] = nn
                 dd['cap'] = pp.episode
-                opth = vfs.readtext(join(path, nn))
+                dd['season'] = pp.season
+                opth = vfs.gettext(join(path, nn))
                 oon = split(opth)[1]
                 dd['original'] = oon
                 dd['ext'] = pp.ext.lower()
@@ -224,24 +226,24 @@ class MoveRename(QWidget):
             for n, i in enumerate(cps):
                 name = i['fixname']
                 if nonly:
-                    name = i['cap']+i['ext']
+                    name = i['cap'] + i['ext']
                 ll = li.item(n)
-                ll.setText(name+"\t"+i['original'])
-            for i in range(lic-cpl):
+                ll.setText(name + "\t" + i['original'])
+            for i in range(lic - cpl):
                 ll = li.takeItem(0)
                 del ll
         else:
             for i in range(lic):
                 name = cps[i]['fixname']
                 if nonly:
-                    name = i['cap']+i['ext']
+                    name = i['cap'] + i['ext']
                 ll = li.item(i)
-                ll.setText(name+"\t"+cps[i]['original'])
-            for i in range(cpl-lic):
-                name = cps[lic+i]['fixname']
+                ll.setText(name + "\t" + cps[i]['original'])
+            for i in range(cpl - lic):
+                name = cps[lic + i]['fixname']
                 if nonly:
-                    name = i['cap']+i['ext']
-                li.addItem(name+"\t"+cps[lic+i]['original'])
+                    name = i['cap'] + i['ext']
+                li.addItem(name + "\t" + cps[lic + i]['original'])
 
     @pyqtSlot()
     def procces(self):
@@ -255,7 +257,8 @@ class MoveRename(QWidget):
     def movef(self, path):
         if self.movethread:
             if self.movethread.isAlive():
-                self.loggin.emit('Hay un proceso en este momento, espere.', WARNING)
+                self.loggin.emit(
+                    'Hay un proceso en este momento, espere.', WARNING)
                 return
         self.movethread = Thread(target=self._movef, args=(path,))
         self.movethread.start()
@@ -263,7 +266,8 @@ class MoveRename(QWidget):
     def renamef(self, path):
         if self.movethread:
             if self.movethread.isAlive():
-                self.loggin.emit('Hay un proceso en este momento, espere.', WARNING)
+                self.loggin.emit(
+                    'Hay un proceso en este momento, espere.', WARNING)
                 return
         self.movethread = Thread(target=self._renamef, args=(path,))
         self.movethread.start()
@@ -275,16 +279,18 @@ class MoveRename(QWidget):
                 if not data['state']:
                     continue
                 fold = data['fold']
-                path = join('/',fold)
+                path = join('/', fold)
                 if not(ff.exists(path)):
                     ff.makedir(path)
                 path2 = join(path, data['fixname'])
-                opth = join('/',data['original'])
-                self.loggin.emit("Moviendo y renombrando: "+data['original']+' para '+join(data['fold'],data['fixname']), INFORMATION)
+                opth = join('/', data['original'])
+                self.loggin.emit("Moviendo y renombrando: " + data['original'] + ' para ' + join(
+                    data['fold'], data['fixname']), INFORMATION)
                 try:
                     ff.move(opth, path2, True)
                 except Exception as e:
-                    self.loggin.emit("Error en archivo: "+data['original']+'<br>'+str(e), ERROR)
+                    self.loggin.emit("Error en archivo: " +
+                                     data['original'] + '<br>' + str(e), ERROR)
         self.loggin.emit("Mover finalizado.", DEBUG)
         self.build_ui_caps()
         self.allf()
@@ -299,11 +305,13 @@ class MoveRename(QWidget):
                 path = '/'
                 path2 = join(path, data['fixname'])
                 opth = join(path, data['original'])
-                self.loggin.emit("Renombrando: "+data['original']+' a '+data['fixname'], INFORMATION)
+                self.loggin.emit(
+                    "Renombrando: " + data['original'] + ' a ' + data['fixname'], INFORMATION)
                 try:
                     ff.move(opth, path2, overwrite=True)
                 except Exception as e:
-                    self.loggin.emit("Error en archivo: "+split(opth)[1]+'<br>'+str(e), ERROR)
+                    self.loggin.emit("Error en archivo: " +
+                                     split(opth)[1] + '<br>' + str(e), ERROR)
         self.loggin.emit("Renombrar finalizado.", DEBUG)
         self.build_ui_caps()
         self.allf()

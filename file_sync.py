@@ -1,24 +1,14 @@
 
 from utils import INFORMATION, WARNING, DEBUG, ERROR, video_formats
-from utils import rename, editDistance, reconnect
-from utils import parse_serie_guessit as parse
-from utils import rename as parse2
-from parser_serie import transform
-import os
-import re
-import sys
+from utils import reconnect
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFileDialog
 from PyQt5.QtWidgets import QHBoxLayout, QPushButton, QRadioButton
 from PyQt5.QtWidgets import QLineEdit, QButtonGroup
 from PyQt5.QtWidgets import QListWidget, QListWidgetItem
 from PyQt5.QtWidgets import QLabel, QProgressBar
-from PyQt5.QtWidgets import QToolButton, QMenu
-from PyQt5.QtGui import QIntValidator, QRegExpValidator
-from PyQt5.QtCore import QRegExp
 import fs
-from threading import Thread
-from fs.path import join, splitext, split, normpath, frombase
+from fs.path import join, normpath
 import qtawesome as qta
 from sync import BaseManager
 from utils import Logger
@@ -47,7 +37,7 @@ class FileGui(QWidget):
             'fa5s.folder-open',
             color='orange',
             color_active='red')
-        self.pathbtn = QPushButton(folder ,"", self)
+        self.pathbtn = QPushButton(folder, "", self)
         tt.addWidget(self.local)
         tt.addWidget(self.pathbar)
         tt.addWidget(self.pathbtn)
@@ -60,12 +50,11 @@ class FileGui(QWidget):
             'fa5s.folder-open',
             color='orange',
             color_active='red')
-        self.pathbtn2 = QPushButton(folder ,"", self)
+        self.pathbtn2 = QPushButton(folder, "", self)
         tt.addWidget(self.other)
         tt.addWidget(self.pathbar2)
         tt.addWidget(self.pathbtn2)
         self.cl.addLayout(tt)
-
 
         tt = QHBoxLayout()
         self.local = QLabel('Folders: ')
@@ -142,33 +131,32 @@ class FileGui(QWidget):
             reconnect(self.ftpm.copier.finish, self.copy_finish)
             self.pathbarftp.setText('/')
         except Exception as e:
-            self.loggin.emit(str(e),ERROR)
+            self.loggin.emit(str(e), ERROR)
             return
         self.li.clear()
         for i in self.ftpm.list_dir('/'):
             item = QListWidgetItem(qta.icon(
-                    'fa5s.folder-open',
-                    color='orange'), i, self.li)
+                'fa5s.folder-open',
+                color='orange'), i, self.li)
             self.li.addItem(item)
 
     @pyqtSlot()
     def ftp_move_to(self, item):
         txt = item.text()
-        txt2 = normpath(join(self.pathbarftp.text(),txt))
+        txt2 = normpath(join(self.pathbarftp.text(), txt))
         self.li.clear()
         if txt2 != '/':
-            normpath(join(txt2,'..'))
+            normpath(join(txt2, '..'))
             item = QListWidgetItem(qta.icon(
-                    'fa5s.folder-open',
-                    color='orange'), '..', self.li)
+                'fa5s.folder-open',
+                color='orange'), '..', self.li)
             self.li.addItem(item)
         for i in self.ftpm.list_dir(txt2):
             item = QListWidgetItem(qta.icon(
-                    'fa5s.folder-open',
-                    color='orange'), i, self.li)
+                'fa5s.folder-open',
+                color='orange'), i, self.li)
             self.li.addItem(item)
         self.pathbarftp.setText(txt2)
-
 
     def get_path(self):
         txt = self.pathbar.text()
@@ -212,14 +200,14 @@ class FileGui(QWidget):
 
     @pyqtSlot(str, str)
     def change_names(self, src, dst):
-        self.namelabel.setText(src+'    '+dst)
-        self.loggin.emit('Descargando '+src+'  para  '+dst, INFORMATION)
+        self.namelabel.setText(src + '    ' + dst)
+        self.loggin.emit('Descargando ' + src + '  para  ' + dst, INFORMATION)
 
     @pyqtSlot(int, int, float)
     def update(self, total, count, speed):
-        val = int(count/max(total,1e-12)*100)
+        val = int(count / max(total, 1e-12) * 100)
         self.progress.setValue(val)
-        self.speedlabel.setText(str(speed/(1024))+' Kb/s')
+        self.speedlabel.setText(str(speed / (1024)) + ' Kb/s')
 
     @pyqtSlot()
     def copy_finish2(self):
@@ -237,6 +225,7 @@ class FileGui(QWidget):
     @pyqtSlot()
     def procces(self):
         if self.in_progress:
-            self.loggin.emit('Hay un proceso en este momento, espere.', WARNING)
+            self.loggin.emit(
+                'Hay un proceso en este momento, espere.', WARNING)
             return
         self.download()

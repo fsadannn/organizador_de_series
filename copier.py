@@ -1,5 +1,4 @@
 from queue import Queue
-import threading
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread, QObject
 from utils import reconnect
 import time
@@ -11,6 +10,7 @@ class _CopyTask(QThread):
     progress = pyqtSignal(int, int, float)
     finish = pyqtSignal()
     finish2 = pyqtSignal()
+
     def __init__(self, copier):
         self.copier = copier
         super(_CopyTask, self).__init__()
@@ -23,7 +23,7 @@ class _CopyTask(QThread):
                 if task is None:
                     break
                 src_file, dst_file, total, src_path, dst_path = task
-                print('processing: '+src_path)
+                print('processing: ' + src_path)
                 _chunk_size = 1024 * 1024
                 read = src_file.read
                 write = dst_file.write
@@ -41,7 +41,7 @@ class _CopyTask(QThread):
                     t2 = timeit
                     t1 = t2
                     t2 = time.time()
-                    speedd = lchunk/max(t2-t1,1e-12)
+                    speedd = lchunk / max(t2 - t1, 1e-12)
                     self.progress.emit(total, count, speedd)
                 dst_file.close()
                 self.finish.emit()
@@ -54,6 +54,7 @@ class _CopyTask(QThread):
 
 class Copier(QObject):
     finish = pyqtSignal()
+
     def __init__(self):
         super(Copier, self).__init__()
         self.queue = Queue()
@@ -67,7 +68,6 @@ class Copier(QObject):
     def watch(self):
         if self.queue.empty():
             self.finish.emit()
-
 
     def start(self):
         self.queue = Queue()
