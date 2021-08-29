@@ -87,14 +87,16 @@ class Falta(QWidget):
         self.proc.clicked.connect(self.procces)
         self.li.itemExpanded.connect(self.change_open_icon)
         self.li.itemCollapsed.connect(self.change_close_icon)
-        self.move.buttonClicked.connect(self.chnage_option)
+        # self.move.buttonClicked.connect(self.chnage_option)
         self.save.clicked.connect(self.save_falta)
 
     @pyqtSlot()
     def save_falta(self):
+        print('saving', self.falta_txt)
         if self.pathbar.text() == '':
             return
-        with open(os.path.join(self.pathbar.text(), 'falta.txt'), 'w') as f:
+        name = 'falta.txt' if self.move.checkedId() == 1 else 'último.txt'
+        with open(os.path.join(self.pathbar.text(), name), 'w') as f:
             f.write(self.falta_txt)
 
     def chnage_option(self, idd):
@@ -186,13 +188,14 @@ class Falta(QWidget):
                             child.setIcon(0, video)
                             child.setText(0, txt)
                             parent.addChild(child)
-                self.falta_txt = falta_txt + '\n'
-                #print(i, addp)
+                self.falta_txt = falta_txt[1:] + '\n'
+                # print(i, addp)
                 if addp:
                     li.addTopLevelItem(parent)
                 else:
                     del parent
         else:
+            falta_txt = ''
             self.last()
             caps_list = self.caps_list
             for i in sorted(caps_list.keys()):
@@ -201,11 +204,13 @@ class Falta(QWidget):
                 parent.setText(0, i)
                 for k in sorted(caps_list[i].keys()):
                     txt = k + " - " + str(caps_list[i][k])
+                    falta_txt += txt + '\n'
                     child = QTreeWidgetItem(parent)
                     child.setIcon(0, video)
                     child.setText(0, txt)
                     parent.addChild(child)
                 li.addTopLevelItem(parent)
+            self.falta_txt = falta_txt
 
     def last(self):
         base = self.pathbar.text()
@@ -238,7 +243,7 @@ class Falta(QWidget):
                 except Exception as e:
                     self.loggin.emit("Error procesando: " +
                                      join(base, fold, filee), WARNING)
-                    self.loggin.emit(e, ERROR)
+                    self.loggin.emit(str(e), ERROR)
                     continue
                 t1 = transform(pp.title)
                 # fill = t1
@@ -292,7 +297,7 @@ class Falta(QWidget):
                 except Exception as e:
                     self.loggin.emit("Error procesando: " +
                                      join(base, fold, filee), WARNING)
-                    self.loggin.emit(e, ERROR)
+                    self.loggin.emit(str(e), ERROR)
                     continue
                 t1 = transform(pp.title)
                 if not pp.episode:

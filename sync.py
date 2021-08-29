@@ -212,7 +212,11 @@ class BaseManager:
         for name in sorted(dirs, key=skey):
             path = join(top, name.name)
             if not self.filesystem.islink(path):
-                self.find_nexts(path, deep + 1, maxdeep)
+                try:
+                    self.find_nexts(path, deep + 1, maxdeep)
+                except (PermissionError, fs.errors.DirectoryExpected) as e:
+                    # print(e)
+                    self.logger.emit(str(e), ERROR)
 
     def last(self, base):
         with read_only(OSFS(base)) as ff:

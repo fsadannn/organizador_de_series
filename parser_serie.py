@@ -13,7 +13,8 @@ else:
     except:
         MODULE = ""
 
-tv = re.compile('[^a-zA-Z0-9ñÑ][tT][vV][^a-zA-Z0-9ñÑ]')
+tv = re.compile(
+    '[^a-zA-Z0-9ñÑáéíóú][tT][vV][^a-zA-Z0-9ñÑáéíóú]', re.I)
 normsp = re.compile('  +')
 daysstr = ['lunes', 'martes', 'mi[eé]rcoles', 'jueves', 'viernes', 's[áa]bado', 'domingo',
            'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -25,17 +26,17 @@ resolution = re.compile(
 codec = re.compile('[Xx]264|[xX]265')
 garbage = re.compile('\{ *\}|\( *\)|\[ *\]')
 
-tokens_str = '[a-zA-Z0-9!ñÑ\']+|\-|'
+tokens_str = '[a-zA-Z0-9!ñÑ\'áéíóú]+|\-|'
 tokens_str += '|'.join(['\{', '\(', '\['])
 tokens_str += '|' + '|'.join(['\}', '\)', '\]'])
-tokens = re.compile(tokens_str)
+tokens = re.compile(tokens_str, re.I)
 captemp = re.compile('([0-9]{1,3})[xX]([0-9]{1,4})', re.I)
 seasonepi = re.compile('[Ss]([0-9]{1,3})[Ee]([0-9]{1,4})', re.I)
 epi = re.compile(
     'chapters?$|episodes?$|episodios?$|cap[ií]tulos?$|caps?$', re.I)
 epin = re.compile(
     'chapters?[0-9]+|episodes?[0-9]+|episodios?[0-9]+|cap[ií]tulos?[0-9]+|caps?[0-9]+', re.I)
-upperm = re.compile('[A-Z].*?[A-Z]')
+upperm = re.compile('[A-ZÁÉÍÓÚ].*?[A-ZÁÉÍÓÚ]')
 ordinal = re.compile(
     '1st|2nd|3rd|[1-9][0-9?]th|1ro|2do|3ro|[4-6]to|7mo|8vo|9no', re.I)
 
@@ -46,7 +47,7 @@ grouping_d = {i: j for i, j in list(
     zip(gopener, gcloser)) + list(zip(gcloser, gopener))}
 gopener = set(gopener)
 gcloser = set(gcloser)
-letn = re.compile('[0-9][a-z]', re.I)
+letn = re.compile('[0-9][a-záéíóú]', re.I)
 
 keep = set(['kun', 'sama', 'chan', 'kai', 'senpai', 'man'])
 
@@ -95,13 +96,18 @@ def clean(txt: str):
 
 
 class Stack:  # pragma: no cover
-    __slots__ = tuple(['_stack'])
+    __slots__ = tuple(['_stack', '_id'])
 
-    def __init__(self):
+    def __init__(self, id: str = ''):
         self._stack: List[Token] = []
+        self._id = id
 
     def __len__(self):
         return len(self._stack)
+
+    @property
+    def id(self) -> str:
+        return self._id
 
     @property
     def stack(self) -> List[Token]:
@@ -234,15 +240,15 @@ class Processor:
     def __init__(self):
         self._capcandidate = []
         self._check: bool = False
-        self._name: Stack = Stack()
-        self._name_episode: Stack = Stack()
+        self._name: Stack = Stack('name')
+        self._name_episode: Stack = Stack('episode')
         self._cap = None
         self._temp = None
         self._temp_cap = None
         self._check_cap: bool = False
         self._tokens: List[Token] = []
         self._groups: List[Group] = []
-        self._candidate: List[List[Token, float, int]] = []
+        self._candidate: List[List[Token, float, int, Stack]] = []
         self._season = None
 
     def _is_cap(self, token: Token) -> bool:
@@ -294,7 +300,8 @@ class Processor:
                          int(bool(token.search(re.compile('[A-Za-z]+'))))
                          - int(bool(token.search(captemp)))
                          + 1 / len(self._tokens),
-                         len(self._tokens)
+                         len(using),
+                         using
                          )
             self._candidate.append(candidate)
 
@@ -345,12 +352,27 @@ class Processor:
             if len(self._candidate) == 1:
                 self._cap = int(self._candidate[0][0].search(
                     re.compile('[0-9]{1,4}')).group())
-                return
 
-            sorted_candidate = list(
-                sorted(self._candidate, key=lambda x: x[1]))
-            self._cap = int(sorted_candidate[0][0].search(
-                re.compile('[0-9]{1,4}')).group())
+                candidate: List[Token, float, int, Stack] = self._candidate[0]
+                candidate[3]._stack.pop(self._candidate[0][2])
+                return
+            else:
+                sorted_candidate = list(
+                    sorted(self._candidate, key=lambda x: x[1]))
+                self._cap = int(sorted_candidate[0][0].search(
+                    re.compile('[0-9]{1,4}')).group())
+                candidate: List[Token, float, int, Stack] = sorted_candidate[0]
+                candidate[3]._stack.pop(sorted_candidate[0][2])
+
+            if candidate[3].id == 'name':
+                cap_name = []
+                for i in range(len(self._name) - candidate[2]):
+                    token = self._name.pop()
+                    cap_name.append(token)
+
+                cap_name = list(reversed(cap_name))
+                for i in cap_name:
+                    self._name_episode.push(i)
 
     @property
     def data(self):
@@ -368,9 +390,10 @@ def rename_serie(txt: str):
     p = Processor()
     p.process(toks)
     data = p.data
+    # print(data)
     if data['cap'] is None:
         cap = ''
-        print(txt, data)
+        # print(txt, data)
     else:
         cap = f"{data['season']}X{'0'*int(data['cap']<10)}{data['cap']}" if data['season'] else f"{'0'*int(data['cap']<10)}{data['cap']}"
     nameep = data['nameep'] if data['nameep'] else ''

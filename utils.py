@@ -208,7 +208,7 @@ def rename(name):
     try:
         t1, t2, t3 = rename_serie(txt)
     except (ValueError, IndexError) as e:
-        print(e)
+        print(e, name)
         print('Error with anime parser, using fallback parser.')
         try:
             rr = parse_serie_guessit(name)
@@ -224,7 +224,6 @@ def rename(name):
             return CapData(rr['title'], ept, ep, ext, bool(ext in video_formats), err)
         except:
             return CapData(txt, '', '', ext, bool(ext in video_formats), True)
-    # data = {''}
     return CapData(t1, t3, t2, ext, bool(ext in video_formats), err)
 
 

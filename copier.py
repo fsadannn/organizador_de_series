@@ -23,7 +23,7 @@ class _CopyTask(QThread):
                 if task is None:
                     break
                 src_file, dst_file, total, src_path, dst_path = task
-                print('processing: ' + src_path)
+                # print('processing: ' + src_path)
                 _chunk_size = 1024 * 1024
                 read = src_file.read
                 write = dst_file.write
@@ -106,6 +106,6 @@ class Copier(QObject):
         except Exception as e:
             # If dst file fails to open, explicitly close src_file
             src_file.close()
-            print(e)
+            # print(e)
             raise
         self.queue.put((src_file, dst_file, size, src_path, dst_path))
