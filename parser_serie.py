@@ -1,8 +1,11 @@
 from __future__ import annotations
-import re
+
 import os
+import re
 import sys
-from typing import List
+from dataclasses import dataclass, field
+from typing import List, Text
+
 from stopwords import stopwords
 
 if hasattr(sys, 'frozen'):
@@ -39,6 +42,7 @@ epin = re.compile(
 upperm = re.compile('[A-ZÁÉÍÓÚ].*?[A-ZÁÉÍÓÚ]')
 ordinal = re.compile(
     '1st|2nd|3rd|[1-9][0-9?]th|1ro|2do|3ro|[4-6]to|7mo|8vo|9no', re.I)
+only_number = re.compile('(?<!\D)[0-9]+(?!\D)')
 
 grouping = set(['{', '(', '[', '}', ')', ']'])
 gopener = ['{', '(', '[']
@@ -140,14 +144,24 @@ class Stack:  # pragma: no cover
         )
 
 
+@dataclass(order=True)
+class CapCandidate:
+    probability: float
+    stack: Stack = field(compare=False)
+    token: Token = field(compare=False)
+    index: int
+
+
 class Token:
-    __slots__ = ('_value', '_is_group', '_is_opener', '_is_closer')
+    __slots__ = ('_value', '_is_group', '_is_opener',
+                 '_is_closer', 'is_candidate')
 
     def __init__(self, value):
         self._value = value
         self._is_group: bool = value in grouping
         self._is_opener: bool = value in gopener
         self._is_closer: bool = value in gcloser
+        self.is_candidate: bool = False
 
     @property
     def is_grouping_token(self) -> bool:
@@ -248,12 +262,14 @@ class Processor:
         self._check_cap: bool = False
         self._tokens: List[Token] = []
         self._groups: List[Group] = []
-        self._candidate: List[List[Token, float, int, Stack]] = []
+        #self._candidate: List[List[Token, float, int, Stack]] = []
+        self._candidate: List[CapCandidate] = []
         self._season = None
 
     def _is_cap(self, token: Token) -> bool:
         if self._cap is not None:
             return False
+
         using = self._name if self._cap is None else self._name_episode
 
         if token.search(epin):
@@ -296,14 +312,18 @@ class Processor:
             return False
 
         if token.search(re.compile('[0-9]{1,3}')) and not token.search(ordinal):
-            candidate = (token,
-                         int(bool(token.search(re.compile('[A-Za-z]+'))))
-                         - int(bool(token.search(captemp)))
-                         + 1 / len(self._tokens),
-                         len(using),
-                         using
-                         )
+            len_more_3 = int(len(token.value) > 3)
+            prob: float = int(bool(token.search(re.compile('[A-Za-z]+'))))
+            - int(bool(token.search(captemp))) - \
+                int(bool(token.search(only_number))) / len(self._tokens)
+            + 1 - len_more_3 / ((1 - len_more_3) +
+                                len_more_3 * len(token.value))
+            + 1 / len(self._tokens)
+            token.is_candidate = True
+            candidate: CapCandidate = CapCandidate(
+                probability=prob, token=token, stack=using, index=len(using))
             self._candidate.append(candidate)
+            return False
 
     def _append(self, token: Token):
         using = self._name if self._cap is None else self._name_episode
@@ -317,18 +337,32 @@ class Processor:
             return
 
         if self._is_cap(token):
+            if self._check:
+                self._temp = None
+                self._check = False
+
             return
 
         if self._check:
             if token.value in keep or \
                     (token.search(upperm) and using.top().search(upperm)):
                 before = str(using.pop())
+
+                if token.is_candidate:
+                    candidate_names: List[str] = list(
+                        map(lambda x: x.token.value, self._candidate))
+                    candidate_names.reverse()
+                    index: int = len(candidate_names) - \
+                        candidate_names.index(token.value) - 1
+                    self._candidate.pop(index)
+
                 sep = str(self._temp)
                 after = str(token)
                 newtok = Token(before + sep + after)
                 using.push(newtok)
             else:
                 using.push(token)
+
             self._temp = None
             self._check = False
             return
@@ -350,23 +384,22 @@ class Processor:
                 return
 
             if len(self._candidate) == 1:
-                self._cap = int(self._candidate[0][0].search(
+                self._cap = int(self._candidate[0].token.search(
                     re.compile('[0-9]{1,4}')).group())
 
-                candidate: List[Token, float, int, Stack] = self._candidate[0]
-                candidate[3]._stack.pop(self._candidate[0][2])
+                candidate: CapCandidate = self._candidate[0]
+                candidate.stack._stack.pop(candidate.index)
                 return
             else:
-                sorted_candidate = list(
-                    sorted(self._candidate, key=lambda x: x[1]))
-                self._cap = int(sorted_candidate[0][0].search(
+                sorted_candidate = list(sorted(self._candidate))
+                self._cap = int(sorted_candidate[0].token.search(
                     re.compile('[0-9]{1,4}')).group())
-                candidate: List[Token, float, int, Stack] = sorted_candidate[0]
-                candidate[3]._stack.pop(sorted_candidate[0][2])
+                candidate: CapCandidate = sorted_candidate[0]
+                candidate.stack._stack.pop(candidate.index)
 
-            if candidate[3].id == 'name':
+            if candidate.stack.id == 'name':
                 cap_name = []
-                for i in range(len(self._name) - candidate[2]):
+                for i in range(len(self._name) - candidate.index):
                     token = self._name.pop()
                     cap_name.append(token)
 

@@ -1,8 +1,10 @@
 import os
 import sys
+
 from guessit import guessit
-from parser_serie import rename_serie
 from PyQt5.QtCore import QObject
+
+from parser_serie import rename_serie
 
 
 class Logger(QObject):
@@ -231,4 +233,10 @@ def temp_format(ss):
     return '[Temp ' + str(ss) + ']'
 
 
-temp_gap = len(temp_format('10'))
+txt, ext = os.path.splitext(
+    "CGI Animated Short Film - 'Scrambled' by Polder Animation _ CGMeetup-9JBNmGlEdLY.mkv")
+ext = ext.lower()
+#rename('CON FILO _  El supuesto PACIFISMO y sus turbias CONEXIONES-vL3E7FIEknk.mkv')
+print(rename_serie(txt))
+#t1, t2, t3 = rename_serie(txt)
+#print(t1, t2, t3)
