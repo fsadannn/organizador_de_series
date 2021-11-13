@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
-from cx_Freeze import setup, Executable
+
+from cx_Freeze import Executable, setup
 
 base = None
 if sys.platform == 'win32':
@@ -23,7 +24,7 @@ executables = [
 ]
 
 setup(name='Organizador',
-      version='4.13.8',
+      version='4.14.2',
       description='Organizador de Series',
       options=options,
       executables=executables

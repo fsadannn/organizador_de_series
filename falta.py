@@ -1,31 +1,30 @@
-import sys
 import os
 import re
-from PyQt5.QtCore import pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFileDialog
-from PyQt5.QtWidgets import QHBoxLayout, QPushButton, QRadioButton
-from PyQt5.QtWidgets import QTreeWidget, QLineEdit, QButtonGroup
-from PyQt5.QtWidgets import QTreeWidgetItem
-from utils import INFORMATION, WARNING, DEBUG, ERROR
-from utils import parse_serie_guessit as parse
-from utils import rename as parse2
-from utils import video_formats
-from parser_serie import transform
-import fs
+
+import qtawesome as qta
+from fs.errors import DirectoryExpected
 from fs.osfs import OSFS
 from fs.path import join, splitext
 from fs.wrap import read_only
-from fs.errors import DirectoryExpected
-import qtawesome as qta
-from utils import Logger, best_ed
+from PyQt5.QtCore import pyqtSignal, pyqtSlot
+from PyQt5.QtWidgets import (
+    QButtonGroup,
+    QFileDialog,
+    QHBoxLayout,
+    QLineEdit,
+    QPushButton,
+    QRadioButton,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
 
-
-fff = re.compile('')
-
-
-def filt(t):
-    pass
-    # funcion para capitulos en el formato temp[xX]caps
+from parser_serie import transform
+from utils import DEBUG, ERROR, INFORMATION, WARNING, CapData, Logger, best_ed
+from utils import parse_serie_guessit as parse
+from utils import rename as parse2
+from utils import video_formats
 
 
 class Falta(QWidget):
@@ -34,25 +33,25 @@ class Falta(QWidget):
 
     def __init__(self):
         super(Falta, self).__init__()
-        self.cl = QVBoxLayout()
-        self.loggin = Logger('FaltaGui', self.logginn)
+        self.cl: QVBoxLayout = QVBoxLayout()
+        self.loggin: Logger = Logger('FaltaGui', self.logginn)
 
-        tt = QHBoxLayout()
-        self.pathbar = QLineEdit()
+        tt: QHBoxLayout = QHBoxLayout()
+        self.pathbar: QLineEdit = QLineEdit()
         folder = qta.icon(
             'fa5s.folder-open',
             color='orange',
             color_active='red')
-        self.pathbtn = QPushButton(folder, '')
+        self.pathbtn: QPushButton = QPushButton(folder, '')
         tt.addWidget(self.pathbar)
         tt.addWidget(self.pathbtn)
         self.cl.addLayout(tt)
 
-        tt = QHBoxLayout()
-        self.move = QButtonGroup()
-        tt1 = QRadioButton("Falta")
+        tt: QHBoxLayout = QHBoxLayout()
+        self.move: QButtonGroup = QButtonGroup()
+        tt1: QRadioButton = QRadioButton("Falta")
         tt1.setChecked(True)
-        tt2 = QRadioButton("Último")
+        tt2: QRadioButton = QRadioButton("Último")
         self.move.addButton(tt1, 1)
         self.move.addButton(tt2, 2)
         self.move.setExclusive(True)
@@ -61,23 +60,23 @@ class Falta(QWidget):
         tt.addStretch()
         self.cl.addLayout(tt)
 
-        self.li = QTreeWidget()
+        self.li: QTreeWidget = QTreeWidget()
         self.li.setColumnCount(1)
         self.cl.addWidget(self.li)
 
-        tt = QHBoxLayout()
+        tt: QHBoxLayout = QHBoxLayout()
         find = qta.icon(
             'fa5s.search',
             color='orange',
             color_active='red')
-        self.proc = QPushButton(find, "")
+        self.proc: QPushButton = QPushButton(find, "")
         tt.addWidget(self.proc)
         tt.addStretch()
         save = qta.icon(
             'fa5s.save',
             color='black',
             color_active='red')
-        self.save = QPushButton(save, "")
+        self.save: QPushButton = QPushButton(save, "")
         tt.addWidget(self.save)
         self.cl.addLayout(tt)
         self.falta_txt = ''
@@ -87,15 +86,23 @@ class Falta(QWidget):
         self.proc.clicked.connect(self.procces)
         self.li.itemExpanded.connect(self.change_open_icon)
         self.li.itemCollapsed.connect(self.change_close_icon)
+        self.li.itemDoubleClicked.connect(self.openFolder)
         # self.move.buttonClicked.connect(self.chnage_option)
         self.save.clicked.connect(self.save_falta)
 
+    @pyqtSlot(QTreeWidgetItem, int)
+    def openFolder(self, item: QTreeWidgetItem, column: int):
+        base = self.pathbar.text()
+        os.startfile(os.path.join(base, item.text(column)))
+        print(base)
+        print(item.text(column), column)
+
     @pyqtSlot()
     def save_falta(self):
-        print('saving', self.falta_txt)
+        #print('saving', self.falta_txt)
         if self.pathbar.text() == '':
             return
-        name = 'falta.txt' if self.move.checkedId() == 1 else 'último.txt'
+        name: str = 'falta.txt' if self.move.checkedId() == 1 else 'último.txt'
         with open(os.path.join(self.pathbar.text(), name), 'w') as f:
             f.write(self.falta_txt)
 
@@ -105,13 +112,13 @@ class Falta(QWidget):
         else:
             self.save.hide()
 
-    def change_open_icon(self, item):
+    def change_open_icon(self, item: QTreeWidgetItem):
         folder = qta.icon(
             'fa5s.folder-open',
             color='orange')
         item.setIcon(0, folder)
 
-    def change_close_icon(self, item):
+    def change_close_icon(self, item: QTreeWidgetItem):
         folder = qta.icon(
             'fa5s.folder',
             color='orange')
@@ -130,7 +137,7 @@ class Falta(QWidget):
 
     @pyqtSlot()
     def set_path(self):
-        dirr = self.get_path()
+        dirr: str = self.get_path()
         if dirr is None or dirr == '':
             return
         self.pathbar.setText(dirr)
@@ -153,7 +160,7 @@ class Falta(QWidget):
             falta_set = set()
             caps_list = self.caps_list
             for i in sorted(caps_list.keys()):
-                parent = QTreeWidgetItem()
+                parent: QTreeWidgetItem = QTreeWidgetItem()
                 parent.setIcon(0, folder)
                 parent.setText(0, i)
                 addp = False
@@ -199,13 +206,13 @@ class Falta(QWidget):
             self.last()
             caps_list = self.caps_list
             for i in sorted(caps_list.keys()):
-                parent = QTreeWidgetItem()
+                parent: QTreeWidgetItem = QTreeWidgetItem()
                 parent.setIcon(0, folder)
                 parent.setText(0, i)
                 for k in sorted(caps_list[i].keys()):
                     txt = k + " - " + str(caps_list[i][k])
                     falta_txt += txt + '\n'
-                    child = QTreeWidgetItem(parent)
+                    child: QTreeWidgetItem = QTreeWidgetItem(parent)
                     child.setIcon(0, video)
                     child.setText(0, txt)
                     parent.addChild(child)
@@ -237,7 +244,7 @@ class Falta(QWidget):
                 self.loggin.emit("Procesando: " +
                                  join(base, fold), INFORMATION)
                 try:
-                    pp = parse2(filee)
+                    pp: CapData = parse2(filee)
                     if pp.error:
                         pp = parse(filee)
                 except Exception as e:
