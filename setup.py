@@ -3,6 +3,8 @@ import sys
 
 from cx_Freeze import Executable, setup
 
+from version import version
+
 base = None
 if sys.platform == 'win32':
     base = 'Win32GUI'
@@ -24,7 +26,7 @@ executables = [
 ]
 
 setup(name='Organizador',
-      version='4.14.8',
+      version=version,
       description='Organizador de Series',
       options=options,
       executables=executables

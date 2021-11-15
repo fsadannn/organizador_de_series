@@ -1,18 +1,26 @@
 
-from utils import INFORMATION, WARNING, DEBUG, ERROR, video_formats
-from utils import reconnect
-from PyQt5.QtCore import pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFileDialog
-from PyQt5.QtWidgets import QHBoxLayout, QPushButton, QRadioButton
-from PyQt5.QtWidgets import QLineEdit, QButtonGroup
-from PyQt5.QtWidgets import QListWidget, QListWidgetItem
-from PyQt5.QtWidgets import QLabel, QProgressBar
 import fs
-from fs.path import join, normpath
-from fs.osfs import OSFS
 import qtawesome as qta
+from fs.osfs import OSFS
+from fs.path import join, normpath
+from PyQt5.QtCore import pyqtSignal, pyqtSlot
+from PyQt5.QtWidgets import (
+    QButtonGroup,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QProgressBar,
+    QPushButton,
+    QRadioButton,
+    QVBoxLayout,
+    QWidget,
+)
+
 from sync import BaseManager
-from utils import Logger
+from utils import DEBUG, ERROR, INFORMATION, WARNING, Logger, reconnect, video_formats
 
 
 class FileManager(BaseManager):

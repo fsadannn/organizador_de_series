@@ -1,19 +1,27 @@
 # -*- coding: UTF-8 -*-
 # !/usr/bin python3
 # @author: SadanNN
-from os import waitpid
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow
-from PyQt5.QtWidgets import QTextEdit, QDockWidget, QTabWidget
-from PyQt5.QtCore import Qt, QByteArray, pyqtSlot
-from PyQt5.QtGui import QPixmap, QIcon
-from move_rename import MoveRename
+from os import waitpid
+
+from PyQt5.QtCore import QByteArray, Qt, pyqtSlot
+from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtWidgets import (
+    QApplication,
+    QDockWidget,
+    QMainWindow,
+    QTabWidget,
+    QTextEdit,
+    QWidget,
+)
+
+from about import About
+from appicon import icon
 from falta import Falta
 # from ftp_manager import FTPGui
 from file_sync import FileGui
-from utils import logcolor
-from appicon import icon
-from utils import NAME
+from move_rename import MoveRename
+from utils import NAME, logcolor
 
 
 class Main(QMainWindow):
@@ -32,7 +40,10 @@ class Main(QMainWindow):
         # self.tabw.addTab(self.cw3,'FTP')
 
         self.cw4 = FileGui()
-        self.tabw.addTab(self.cw4, 'File')
+        self.tabw.addTab(self.cw4, 'Sync')
+
+        self.cw5 = About()
+        self.tabw.addTab(self.cw5, 'About')
 
         self.tabw.setTabShape(QTabWidget.Triangular)
         self.tabw.setTabPosition(QTabWidget.West)
