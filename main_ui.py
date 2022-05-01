@@ -2,7 +2,6 @@
 # !/usr/bin python3
 # @author: SadanNN
 import sys
-from os import waitpid
 
 from PyQt5.QtCore import QByteArray, Qt, pyqtSlot
 from PyQt5.QtGui import QIcon, QPixmap
@@ -12,7 +11,6 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QTabWidget,
     QTextEdit,
-    QWidget,
 )
 
 from about import About

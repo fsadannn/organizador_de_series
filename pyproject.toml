@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "organizador_new"
+version = "0.1.0"
+description = ""
+authors = ["fsadannn <fsadannn@gmail.com>"]
+
+# [[tool.poetry.source]]
+# name = "nexus"
+# url = "http://nexus.prod.uci.cu/repository/pypi-all/simple"
+# default = true
+
+[tool.poetry.dependencies]
+python = "^3.8"
+guessit = "^3.4.3"
+QtAwesome = "^1.1.1"
+PyQt5 = "^5.15.6"
+fs = "^2.4.15"
+
+[tool.poetry.dev-dependencies]
+cx_freeze = "^6.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

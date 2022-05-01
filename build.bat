@@ -1,2 +1,2 @@
-python setup.py build
-python setup.py bdist_msi
+poetry run python setup.py build
+poetry run python setup.py bdist_msi

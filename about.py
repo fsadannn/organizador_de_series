@@ -1,14 +1,7 @@
 from typing import Text
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (
-    QHBoxLayout,
-    QLabel,
-    QLayout,
-    QSizePolicy,
-    QVBoxLayout,
-    QWidget,
-)
+from PyQt5.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from version import version
 
@@ -44,7 +37,7 @@ class About(QWidget):
         self.cl.addLayout(tt)
 
         obj = self.cl
-        print(obj.geometry().x(), obj.geometry().y(),
-              obj.geometry().width(), obj.geometry().height())
+        # print(obj.geometry().x(), obj.geometry().y(),
+        #       obj.geometry().width(), obj.geometry().height())
 
         self.setLayout(self.cl)

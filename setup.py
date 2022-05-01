@@ -14,7 +14,7 @@ options = {
         'includes': ['atexit', 'utils', 'move_rename', 'falta', 'appicon',
                      'stopwords', 'parser_serie', 'sync'],
         'include_files': ['options.json'],
-        'packages': ['pkginfo', 'pkg_resources', 'babelfish', 'queue'],
+        'packages': ['babelfish', 'queue', 'series_renamer'],
         'include_msvcr': True,
         'optimize': 2
     }
