@@ -17,7 +17,11 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QLineEdit" name="pathbar"/>
+      <widget class="QLineEdit" name="pathbar">
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QPushButton" name="pathbtn">
@@ -31,14 +35,14 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
-      <widget class="QPushButton" name="selectAll">
+      <widget class="QPushButton" name="selectAllButton">
        <property name="text">
         <string>PushButton</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="selectInvert">
+      <widget class="QPushButton" name="selectInvertButton">
        <property name="text">
         <string>PushButton</string>
        </property>
@@ -58,23 +62,20 @@
       </spacer>
      </item>
      <item>
-      <widget class="QRadioButton" name="mover">
+      <widget class="QRadioButton" name="moverRadio">
        <property name="text">
         <string>Mover</string>
        </property>
-       <attribute name="buttonGroup">
-        <string notr="true">moveGroup</string>
-       </attribute>
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="renombrar">
+      <widget class="QRadioButton" name="renombrarRadio">
        <property name="text">
         <string>Renombrar</string>
        </property>
-       <attribute name="buttonGroup">
-        <string notr="true">moveGroup</string>
-       </attribute>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
     </layout>
@@ -82,14 +83,14 @@
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
-      <widget class="QListView" name="listView"/>
+      <widget class="QListWidget" name="listWidget"/>
      </item>
     </layout>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
-      <widget class="QPushButton" name="proc">
+      <widget class="QPushButton" name="procButton">
        <property name="text">
         <string>PushButton</string>
        </property>
@@ -114,7 +115,4 @@
  </widget>
  <resources/>
  <connections/>
- <buttongroups>
-  <buttongroup name="moveGroup"/>
- </buttongroups>
 </ui>

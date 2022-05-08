@@ -1,11 +1,16 @@
 import re
-from pprint import pprint
+# from pprint import pprint
 from typing import List
 
 from .scanner import Token, TokenType, grouping_d, tokenize
 from .utils import Stack
 
 chapter_number = re.compile('[0-9]{1,4}')
+upperm = re.compile('[A-ZÁÉÍÓÚ].*?[A-ZÁÉÍÓÚ]')
+more_2_letters = re.compile('[a-zA-ZñÑáéíóúÁÉÍÓÚ]{3,}')
+more_2_digits = re.compile('[0-9]{3,}')
+
+_CHAPTER_PROBABILITY_GAP = 0.6
 
 
 def _padded_number(number: int, padding: int = 1) -> str:
@@ -19,9 +24,32 @@ def _padded_number(number: int, padding: int = 1) -> str:
 
 class ChapterMetadata:
     def __init__(self, serie_name: List[Token], chapter_name: List[Token], episode: Token, season: Token) -> None:
-        self.serie_name = ' '.join(map(lambda x: x.text, serie_name))
-        self.chapter_name = ' '.join(
-            map(lambda x: x.text, chapter_name)) if chapter_name is not None else ''
+        serie_name_str = ''
+        for n, i in enumerate(serie_name):
+            if i.type in (TokenType.StopWord, TokenType.KeepJoined) and n != 0:
+                serie_name_str += ' ' + i.text.lower()
+            elif len(i.text) < 3 or upperm.match(i.text):
+                serie_name_str += ' ' + i.text
+            elif len(i.text) >= 2:
+                serie_name_str += ' ' + i.text[0].upper() + i.text[1:].lower()
+
+        self.serie_name = serie_name_str.strip()
+
+        self.chapter_name = ''
+
+        if chapter_name is not None:
+            chapter_name_str = ''
+
+            for n, i in enumerate(chapter_name):
+                if i.type in (TokenType.StopWord, TokenType.KeepJoined) and n != 0:
+                    chapter_name_str += ' ' + i.text.lower()
+                elif len(i.text) < 3 or upperm.match(i.text):
+                    chapter_name_str += ' ' + i.text
+                elif len(i.text) >= 2:
+                    chapter_name_str += i.text[0].upper() + i.text[1:].lower()
+
+            self.chapter_name = chapter_name_str.strip()
+
         self.episode = int(episode.text) if episode is not None else 0
         self.season = int(season.text) if season is not None else 0
 
@@ -33,7 +61,8 @@ class ChapterMetadata:
 
     def __repr__(self) -> str:
         season = int(self.season != 0) * " season=\"" + \
-            int(self.season != 0) * self.season_number() + "\" "
+            int(self.season != 0) * self.season_number() + \
+            int(self.season != 0) * "\" "
         chapter_name = int(len(self.chapter_name) > 0) * " chapter_name=\"" + \
             self.chapter_name + int(len(self.chapter_name) > 0) * "\""
         return f'{self.__class__.__name__}< name="{self.serie_name}" episode="{self.episode_number()}"{season}{chapter_name} >'
@@ -63,8 +92,26 @@ class Processor:
         alt_context._stack = alt_context._stack[::-1]
 
     def _get_chapter(self, chapter_candidates: List[Token], serie_context: Stack, alt_context: Stack) -> Token:
+        if len(chapter_candidates) == 0:
+            return None
+
         if len(chapter_candidates) == 1:
             chapter = chapter_candidates[0]
+            weigh_of_not_only_number = 0.3
+            weight_of_more_that_2_digits = 0.2
+            weight_of_more_that_2_consecutive_letters = 0.3
+
+            assert weigh_of_not_only_number + weight_of_more_that_2_digits + \
+                weight_of_more_that_2_consecutive_letters < 1.01
+
+            probability = int(chapter.type != TokenType.Number) * \
+                weigh_of_not_only_number + int(bool(more_2_digits.search(chapter.text))) * weight_of_more_that_2_digits + int(
+                    bool(more_2_letters.search(chapter.text))) * weight_of_more_that_2_consecutive_letters
+            probability = 1 - probability
+
+            if probability < _CHAPTER_PROBABILITY_GAP:
+                return None
+
             index = serie_context._stack.index(chapter)
             self._update_contexts(index, serie_context, alt_context)
 
@@ -151,7 +198,7 @@ class Processor:
                 chapter_candidates.append(token)
                 context.push(token)
 
-            elif token.type == TokenType.Dash:
+            elif token.type == TokenType.Dash and not tokens_stack.empty:
                 next_token: Token = tokens_stack.top()
 
                 if next_token.type != TokenType.KeepJoined:

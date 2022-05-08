@@ -36,8 +36,6 @@ captemp = re.compile('([0-9]{1,3})[xX]([0-9]{1,4})', re.I)
 
 seasonepi = re.compile('[Ss]([0-9]{1,3})[Ee]([0-9]{1,4})', re.I)
 
-upperm = re.compile('[A-ZÁÉÍÓÚ].*?[A-ZÁÉÍÓÚ]')
-
 letn = re.compile('[0-9][a-záéíóú]', re.I)
 
 gopener = ['{', '(', '[']
@@ -134,6 +132,9 @@ def make_token(text: str, position: int) -> Token:
 
     for t_type in TokenType:
         if t_type.value.match(text):
+            token_type = t_type
+            break
+        elif t_type in (TokenType.StopWord, TokenType.KeepJoined) and t_type.value.match(text.lower()):
             token_type = t_type
             break
 

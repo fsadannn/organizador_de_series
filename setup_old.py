@@ -11,16 +11,17 @@ if sys.platform == 'win32':
 
 options = {
     'build_exe': {
-        'includes': ['atexit'],
-        'packages': ['queue', 'organizador'],
-        'excludes': [],
+        'includes': ['atexit', 'utils', 'move_rename', 'falta', 'appicon',
+                     'stopwords', 'parser_serie', 'sync'],
+        'include_files': ['options.json'],
+        'packages': ['babelfish', 'queue', 'series_renamer'],
         'include_msvcr': True,
         'optimize': 2
     }
 }
 
 executables = [
-    Executable('new_main_ui.py', base=base,
+    Executable('main_ui.py', base=base,
                target_name='Organizador de Series.exe', icon='icon.ico')
 ]
 

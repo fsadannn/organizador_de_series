@@ -1,22 +1,21 @@
+# -*- coding: UTF-8 -*-
+# !/usr/bin python3
+# @author: SadanNN
+
 import sys
 
-from PyQt5 import uic
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget
+from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtWidgets import QApplication
 
-from new_renombrar import Renombrar
-
-
-class Ui(QMainWindow):
-    def __init__(self):
-        super().__init__()  # Call the inherited classes __init__ method
-        uic.loadUi('main.ui', self)  # Load the .ui file
-        self.show()  # Show the GUI
-        self.renombrar = Renombrar(self)
-        tabw: QTabWidget = self.tabWidget
-        tabw.addTab(self.renombrar, 'Mover/Renombrar')
-
+import organizador.assets as Assets
+from organizador.new_main_ui import Ui
+from organizador.utils.resource_loader import get_as_bytes
 
 app = QApplication(sys.argv)  # Create an instance of QtWidgets.QApplication
 app.setStyle('Fusion')
+iconData = get_as_bytes(Assets, 'icon.ico')
+px = QPixmap()
+px.loadFromData(iconData, 'ico')
+app.setWindowIcon(QIcon(px))
 window = Ui()  # Create an instance of our class
 app.exec_()  # Start the application
