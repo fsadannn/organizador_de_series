@@ -1,23 +1,19 @@
-# -*- coding: utf-8 -*-
 import sys
 
 from cx_Freeze import Executable, setup
 
-from version import version
+from organizador.version import version
 
-base = None
-if sys.platform == 'win32':
-    base = 'Win32GUI'
+# Dependencies are automatically detected, but it might need
+# fine tuning.
+build_options = {'includes': ['atexit'],
+                 'packages': ['queue', 'organizador'],
+                 'zip_include_packages': ['pytz', 'PyQt5'],
+                 'include_msvcr': True,
+                 'optimize': 2}
 
-options = {
-    'build_exe': {
-        'includes': ['atexit'],
-        'packages': ['queue', 'organizador'],
-        'excludes': [],
-        'include_msvcr': True,
-        'optimize': 2
-    }
-}
+
+base = 'Win32GUI' if sys.platform == 'win32' else None
 
 executables = [
     Executable('new_main_ui.py', base=base,
@@ -27,6 +23,5 @@ executables = [
 setup(name='Organizador',
       version=version,
       description='Organizador de Series',
-      options=options,
-      executables=executables
-      )
+      options={'build_exe': build_options},
+      executables=executables)

@@ -1,5 +1,5 @@
 run:
-	poetry run python main_ui.py
+	python main_ui.py
 
 run-new:
 	poetry run python new_main_ui.py
