@@ -3,6 +3,7 @@ from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QMainWindow, QTabWidget, QTextEdit
 
 from . import ui as UIs
+from .about import About
 from .falta import Falta
 from .new_renombrar import Renombrar
 from .utils.qt_utils import LogLevel, logcolor
@@ -22,6 +23,9 @@ class Ui(QMainWindow):
 
         self.falta = Falta(self)
         tabw.addTab(self.falta, 'Falta')
+
+        self.about = About(self)
+        tabw.addTab(self.about, 'About')
 
         self.renombrar.logginn.connect(self.loggin)
         self.falta.logginn.connect(self.loggin)
