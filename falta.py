@@ -94,8 +94,8 @@ class Falta(QWidget):
     def openFolder(self, item: QTreeWidgetItem, column: int):
         base = self.pathbar.text()
         os.startfile(os.path.join(base, item.text(column)))
-        print(base)
-        print(item.text(column), column)
+        # print(base)
+        # print(item.text(column), column)
 
     @pyqtSlot()
     def save_falta(self):

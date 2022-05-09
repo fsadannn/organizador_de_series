@@ -1,5 +1,4 @@
 
-import fs
 import qtawesome as qta
 from fs.osfs import OSFS
 from fs.path import join, normpath
