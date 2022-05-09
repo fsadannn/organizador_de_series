@@ -33,7 +33,7 @@ class Renombrar(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.loggin = Logger(' Mover y Renombrar', self.logginn)
+        self.loggin = Logger('Mover y Renombrar', self.logginn)
         self.movethread: Thread = None
         self.vfs: FS = None
         self.chapters_map: Dict[str, ChapterMap] = {}
