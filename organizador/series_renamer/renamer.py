@@ -1,5 +1,5 @@
 import re
-# from pprint import pprint
+from pprint import pprint
 from typing import List
 
 from .scanner import Token, TokenType, grouping_d, tokenize
@@ -50,8 +50,13 @@ class ChapterMetadata:
 
             self.chapter_name = chapter_name_str.strip()
 
-        self.episode = int(episode.text) if episode is not None else 0
-        self.season = int(season.text) if season is not None else 0
+        self.episode = 0
+        if episode is not None:
+            self.episode = int(re.search('[0-9]+', episode.text).group())
+
+        self.season = 0
+        if season is not None:
+            self.season = int(re.search('[0-9]+', season.text).group())
 
     def episode_number(self, padding: int = 1) -> str:
         return _padded_number(self.episode, padding)
