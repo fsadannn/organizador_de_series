@@ -1,4 +1,5 @@
-from collections import MutableMapping, defaultdict
+from collections import defaultdict
+from collections.abc import MutableMapping
 from dataclasses import dataclass
 from typing import Dict, Iterator, List, Set, Text, Union
 
@@ -31,18 +32,18 @@ def make_temp_fs(fff: FS) -> FS:
 
     files: Iterator[Info] = ff.scandir('/')
 
-    for j in files:
-        if not j.is_file:
+    for k in files:
+        if not k.is_file:
             continue
 
-        if splitext(j.name)[1] in subs_formats:
-            posprocsub.append(j.name)
+        if splitext(k.name)[1].lower() in subs_formats:
+            posprocsub.append(k.name)
             continue
 
-        serie: ChapterMetadata = rename_serie(j.name)
+        serie: ChapterMetadata = rename_serie(k.name)
 
         try:
-            if is_video(j.name):
+            if is_video(k.name):
                 folder = serie.serie_name
 
                 if not(folder in folders):
@@ -66,61 +67,61 @@ def make_temp_fs(fff: FS) -> FS:
                 if serie.chapter_name:
                     file_name = f'{file_name} - {serie.chapter_name}'
 
-                file_name += get_ext(j.name)
+                file_name += get_ext(k.name)
 
-                ram.settext(join(pth, file_name), join(path, j.name))
+                ram.settext(join(pth, file_name), join(path, k.name))
         except KeyError:
             continue
 
-        for j in posprocsub:
-            serie: ChapterMetadata = rename_serie(j)
+    for j in posprocsub:
+        serie: ChapterMetadata = rename_serie(j)
 
-            folder = serie.serie_name
-            pth = join('/', folder)
+        folder = serie.serie_name
+        pth = join('/', folder)
 
-            if serie.episode:
-                if serie.season:
-                    file_name = f'{serie.serie_name} - {serie.season_number()}X{serie.episode_number()}'
-                else:
-                    file_name = f'{serie.serie_name} - {serie.episode_number()}'
+        if serie.episode:
+            if serie.season:
+                file_name = f'{serie.serie_name} - {serie.season_number()}X{serie.episode_number()}'
             else:
-                file_name = serie.serie_name
+                file_name = f'{serie.serie_name} - {serie.episode_number()}'
+        else:
+            file_name = serie.serie_name
 
-            if serie.chapter_name:
-                file_name += f'{file_name} - {serie.chapter_name}'
+        if serie.chapter_name:
+            file_name = f'{file_name} - {serie.chapter_name}'
 
-            file_name += get_ext(j)
+        file_name += get_ext(j)
 
-            if ram.exists(pth):
+        if ram.exists(pth):
+            ram.settext(join(pth, file_name), join(path, j))
+
+        elif len(new_files) == 1:
+            pth = join('/', list(new_files)[0])
+            ram.settext(join(pth, file_name), join(path, j))
+
+        elif len(new_files) > 1:
+            best = None
+            gap = 3
+
+            for i in new_files:
+                n = editDistance(i, folder)
+
+                if n < 3 and n < gap:
+                    best = i
+                    gap = n
+                elif n == 0:
+                    best = i
+                    break
+
+            if best:
+                pth = join('/', best)
                 ram.settext(join(pth, file_name), join(path, j))
-
-            elif len(new_files) == 1:
-                pth = join('/', list(new_files)[0])
-                ram.settext(join(pth, file_name), join(path, j))
-
-            elif len(new_files) > 1:
-                best = None
-                gap = 3
-
-                for i in new_files:
-                    n = editDistance(i, folder)
-
-                    if n < 3 and n < gap:
-                        best = i
-                        gap = n
-                    elif n == 0:
-                        best = i
-                        break
-
-                if best:
-                    pth = join('/', best)
-                    ram.settext(join(pth, file_name), join(path, j))
-                else:
-                    ram.makedir('/subs', recreate=True)
-                    ram.settext(join('/subs', j), join(path, j))
             else:
                 ram.makedir('/subs', recreate=True)
                 ram.settext(join('/subs', j), join(path, j))
+        else:
+            ram.makedir('/subs', recreate=True)
+            ram.settext(join('/subs', j), join(path, j))
 
     return ram
 
