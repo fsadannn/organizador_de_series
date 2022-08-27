@@ -5,13 +5,15 @@ from typing import Container, List, Optional, Union
 from .stopwords import stopwords
 
 dates_str = '[0-9]{1,2}[/-][0-9]{1,2}[/-][0-9]{2,4}|[0-9]{2,4}[/-][0-9]{1,2}[/-][0-9]{1,2}'
+float_number = '[0-9]+\.[0-9]+'
 
-tokens_str = dates_str + r'|[a-zA-Z0-9!ñÑ\'áéíóúÁÉÍÓÚ@]+|\-|&|'
+tokens_str = dates_str + f'|{float_number}' + \
+    r'|[a-zA-Z0-9!ñÑ\'áéíóúÁÉÍÓÚ@]+|\-|&|'
 tokens_str += '|'.join([r'\{', r'\(', r'\['])
 tokens_str += '|' + '|'.join([r'\}', r'\)', r'\]'])
 tokens_expression = re.compile(tokens_str, re.I)
 
-only_number = re.compile(r'(?<!\D)[0-9]+(?!\D)')
+only_number = re.compile(r'(?<!\D)[0-9]+\.?[0-9]*(?!\D)')
 
 ordinal = re.compile(
     '1st|2nd|3rd|[1-9][0-9]?th|1ro|2do|3ro|[4-6]to|7mo|8vo|9no', re.I)
@@ -30,7 +32,7 @@ codec = re.compile('[Xx]264|[xX]265')
 epi = re.compile(
     'chapters?$|episodes?$|episodios?$|cap[ií]tulos?$|caps?$', re.I)
 epin = re.compile(
-    'chapters?[0-9]+|episodes?[0-9]+|episodios?[0-9]+|cap[ií]tulos?[0-9]+|caps?[0-9]+', re.I)
+    'chapters?[0-9]+\.?[0-9]*|episodes?[0-9]+\.?[0-9]*|episodios?[0-9]+\.?[0-9]*|cap[ií]tulos?[0-9]+\.?[0-9]*|caps?[0-9]+\.?[0-9]*', re.I)
 
 captemp = re.compile('([0-9]{1,3})[xX]([0-9]{1,4})', re.I)
 

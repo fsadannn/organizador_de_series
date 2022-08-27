@@ -1,4 +1,6 @@
 import datetime
+from math import floor
+from typing import Union
 
 _current_year = datetime.date.today().year
 _year_gap = 100
@@ -15,6 +17,15 @@ def is_valid_year(txt: str) -> bool:
         return False
     except ValueError:
         return False
+
+
+def number_to_str(number: Union[float, int]) -> str:
+    has_fraction = abs(number - floor(number)) > 1e-9
+
+    if has_fraction:
+        return str(number)
+
+    return str(int(number))
 
 
 class Stack:  # pragma: no cover

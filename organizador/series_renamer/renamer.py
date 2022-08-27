@@ -2,8 +2,8 @@ import re
 # from pprint import pprint
 from typing import List
 
-from .scanner import Token, TokenType, grouping_d, tokenize
-from .utils import Stack
+from .scanner import Token, TokenType, float_number, grouping_d, tokenize
+from .utils import Stack, number_to_str
 
 chapter_number = re.compile('[0-9]{1,4}')
 upperm = re.compile('[A-ZÁÉÍÓÚ].*?[A-ZÁÉÍÓÚ]')
@@ -13,8 +13,8 @@ more_2_digits = re.compile('[0-9]{3,}')
 _CHAPTER_PROBABILITY_GAP = 0.6
 
 
-def _padded_number(number: int, padding: int = 1) -> str:
-    episode_text = str(number)
+def _padded_number(number: float, padding: int = 1) -> str:
+    episode_text = number_to_str(number)
 
     while len(episode_text) <= padding:
         episode_text = '0' + episode_text
@@ -50,8 +50,15 @@ class ChapterMetadata:
 
             self.chapter_name = chapter_name_str.strip()
 
-        self.episode = int(episode.text) if episode is not None else 0
-        self.season = int(season.text) if season is not None else 0
+        self.episode = 0
+        if episode is not None:
+            self.episode = float(
+                re.search('[0-9]+\.?[0-9]*', episode.text).group())
+
+        self.season = 0
+        if season is not None:
+            self.season = float(
+                re.search('[0-9]+\.?[0-9]*', season.text).group())
 
     def episode_number(self, padding: int = 1) -> str:
         return _padded_number(self.episode, padding)
@@ -167,7 +174,7 @@ class Processor:
 
             if token.type == TokenType.NumberedEpisode:
                 search_result = chapter_number.search(token.text)
-                number = int(search_result.group())
+                number = float(search_result.group())
                 chapter = Token(
                     str(number), TokenType.Number, 1)
                 has_found_chapter = True
@@ -186,10 +193,10 @@ class Processor:
 
             elif token.type in (TokenType.SeasonEpisode, TokenType.ChapterSeason):
                 search_result = token.type.value.search(token.text)
-                number = int(search_result.groups()[0])
+                number = float(search_result.groups()[0])
                 season = Token(
                     str(number), TokenType.Number, 1)
-                number = int(search_result.groups()[1])
+                number = float(search_result.groups()[1])
                 chapter = Token(
                     str(number), TokenType.Number, 1)
                 has_found_chapter = True
