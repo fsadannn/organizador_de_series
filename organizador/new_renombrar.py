@@ -158,7 +158,7 @@ class Renombrar(QWidget):
         self.vfs: FS = data
         chapters_map: Dict[str, ChapterMap] = {}
         vfs = self.vfs
-        vfs.tree()
+        # vfs.tree()
 
         for path, _, files in vfs.walk():
             for i in files:
