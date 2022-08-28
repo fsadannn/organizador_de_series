@@ -1,6 +1,7 @@
 from collections import defaultdict
 from collections.abc import MutableMapping
 from dataclasses import dataclass
+from math import floor
 from typing import Dict, Iterator, List, Set, Text, Union
 
 from fs.base import FS
@@ -13,6 +14,13 @@ from .edit_distance import best_ed, editDistance
 from .formats import get_ext, is_video, subs_formats
 from .rename import ChapterMetadata
 from .rename import rename as rename_serie
+
+
+def to_int(n: Union[float, int]) -> Union[float, int]:
+    if abs(n - floor(n)) < 1e-9:
+        return int(n)
+
+    return n
 
 
 def make_temp_fs(fff: FS) -> FS:
@@ -146,7 +154,7 @@ class SerieFolder(MutableMapping):
     __slots__ = ('_series', 'name')
 
     def __init__(self, name: str) -> None:
-        self._series: Dict[str, Set[int]] = defaultdict(set)
+        self._series: Dict[str, Set[Union[float, int]]] = defaultdict(set)
         self.name = name
 
     def __contains__(self, x: str):
@@ -159,16 +167,16 @@ class SerieFolder(MutableMapping):
         for i in self._series:
             yield i
 
-    def __getitem__(self, key: str) -> Set[int]:
+    def __getitem__(self, key: str) -> Set[Union[int, float]]:
         return self._series[key]
 
-    def __setitem__(self, key: str, value: int):
+    def __setitem__(self, key: str, value: Union[int, float]):
         self._series[key].add(value)
 
     def __delitem__(self, key):
         del self._series[key]
 
-    def last(self, key: str) -> int:
+    def last(self, key: str) -> Union[int, float]:
         return max(self._series[key])
 
     def compute_lost_chapters(self, key: str) -> List[ChaptersRange]:
@@ -214,7 +222,9 @@ class SerieFS(MutableMapping):
     def __delitem__(self, key):
         del self._fs[key]
 
-    def add_serie_episode(self, folder_name: str, serie_name: str, episode: int):
+    def add_serie_episode(self, folder_name: str, serie_name: str, episode: Union[int, float]):
+        episode = to_int(episode)
+
         if folder_name in self:
             if serie_name in self[folder_name]:
                 self[folder_name][serie_name] = episode

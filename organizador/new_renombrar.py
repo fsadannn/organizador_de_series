@@ -25,7 +25,7 @@ from .utils.formats import get_ext
 from .utils.qt_utils import Logger, LogLevel
 from .utils.rename import ChapterMap, rename
 from .utils.resource_loader import get_as_file_like_string
-from .utils.sync import make_temp_fs
+from .utils.sync import make_temp_fs, to_int
 
 
 class Renombrar(QWidget):
@@ -168,8 +168,8 @@ class Renombrar(QWidget):
                 oon = split(opth)[1]
                 dd = {}
                 dd['fixname'] = name
-                dd['chapter'] = serie.episode
-                dd['season'] = serie.season
+                dd['chapter'] = to_int(serie.episode)
+                dd['season'] = to_int(serie.season)
                 dd['original'] = oon
                 dd['ext'] = get_ext(name)
                 dd['vpath'] = join(path, name)
